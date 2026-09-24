@@ -3,1035 +3,1136 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#4169e1" />
-  <title>Ampertech - Controle de Vendas</title>
-
-  <script src="https://unpkg.com/lucide@latest"></script>
-
+  <title>Ampertech • Controle de Vendas</title>
+  <meta name="theme-color" content="#4167e8" />
   <style>
     :root{
-      --blue:#4169e1;
-      --blue-2:#3158d2;
-      --blue-soft:#eef2ff;
-      --bg:#f7f9fc;
+      --primary:#4167e8;
+      --primary-2:#3156d9;
+      --primary-soft:#eef2ff;
+      --bg:#f6f8fc;
       --card:#ffffff;
-      --text:#111827;
-      --muted:#64748b;
-      --line:#dfe6ef;
-      --green:#10b981;
-      --red:#ef4444;
-      --amber:#f59e0b;
-      --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.05);
-      --radius:12px;
+      --text:#101828;
+      --muted:#667085;
+      --line:#dce3ec;
+      --success:#12b76a;
+      --success-soft:#dff8eb;
+      --danger:#ff4d4f;
+      --danger-soft:#fff0f0;
+      --shadow:0 1px 3px rgba(16,24,40,.12),0 1px 2px rgba(16,24,40,.06);
+      --radius:14px;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:var(--bg);
-      color:var(--text);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      background:var(--bg);color:var(--text)
     }
     button,input,select,textarea{font:inherit}
     button{cursor:pointer}
-    .hidden{display:none!important}
-
-    header{
-      height:58px;
-      background:white;
-      border-bottom:1px solid var(--line);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 16px;
-      position:sticky;
-      top:0;
-      z-index:30;
+    [hidden]{display:none!important}
+    .app{min-height:100vh}
+    .topbar{
+      height:48px;background:#fff;border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 10px;
+      position:sticky;top:0;z-index:20
     }
-    .brand{display:flex;align-items:center;gap:10px}
-    .brand-badge{
-      width:34px;height:34px;border-radius:10px;background:var(--blue);color:#fff;
-      display:grid;place-items:center
+    .brand{display:flex;align-items:center;gap:9px}
+    .brand-logo{
+      width:32px;height:32px;border-radius:10px;background:var(--primary);color:#fff;
+      display:grid;place-items:center;font-weight:800
     }
-    .brand-title{font-weight:800;line-height:1}
-    .brand-sub{font-size:11px;color:var(--muted);margin-top:3px}
-    .header-actions{display:flex;align-items:center;gap:8px}
+    .brand-text strong{display:block;font-size:14px;line-height:1.05}
+    .brand-text span{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+    .top-actions{display:flex;align-items:center;gap:8px}
+    .sync{
+      display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);
+      padding:5px 8px;border-radius:999px;background:#f8fafc;border:1px solid var(--line)
+    }
+    .sync-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b}
+    .sync.ok .sync-dot{background:var(--success)}
+    .sync.err .sync-dot{background:var(--danger)}
+    .user-email{font-size:11px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .icon-btn{
-      border:0;background:transparent;color:var(--muted);padding:8px;border-radius:8px;
-      display:grid;place-items:center
+      border:0;background:transparent;color:#61708a;border-radius:8px;
+      min-width:34px;height:34px;display:grid;place-items:center;padding:0 8px
     }
-    .icon-btn:hover{background:#f1f5f9}
-
-    .layout{display:flex;min-height:calc(100vh - 58px)}
-    aside{
-      width:225px;background:white;border-right:1px solid var(--line);
-      padding:14px 12px;position:sticky;top:58px;height:calc(100vh - 58px)
+    .icon-btn:hover{background:#f2f4f7}
+    .layout{display:grid;grid-template-columns:214px 1fr;min-height:calc(100vh - 48px)}
+    .sidebar{
+      background:#fff;border-right:1px solid var(--line);padding:22px 12px;
+      position:sticky;top:48px;height:calc(100vh - 48px)
     }
     .nav-btn{
-      width:100%;display:flex;align-items:center;gap:12px;border:0;background:transparent;
-      padding:11px 12px;border-radius:11px;color:#475569;text-align:left;margin-bottom:3px
+      width:100%;border:0;background:transparent;color:#526078;
+      display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;margin-bottom:5px;
+      text-align:left;font-weight:500
     }
-    .nav-btn:hover{background:#f8fafc}
-    .nav-btn.active{background:#eaf0ff;color:#3158d2}
-    .nav-btn i{width:18px}
-
-    main{flex:1;padding:18px 24px 38px}
-    .container{max-width:760px;margin:0 auto}
-    .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
-    .page-title{font-size:20px;font-weight:800;margin:0}
-    .btn{
-      border:1px solid var(--line);background:white;border-radius:10px;padding:9px 14px;
-      display:inline-flex;align-items:center;justify-content:center;gap:8px
+    .nav-btn:hover,.nav-btn.active{background:var(--primary-soft);color:var(--primary)}
+    .main{padding:20px 24px 50px}
+    .content{max-width:740px;margin:0 auto}
+    .content.wide{max-width:900px}
+    .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+    .page-head h1{font-size:20px;margin:0}
+    .back-title{display:flex;align-items:center;gap:12px}
+    .primary-btn,.secondary-btn,.danger-btn{
+      border:0;border-radius:10px;padding:10px 16px;font-weight:700;
+      display:inline-flex;align-items:center;gap:8px;justify-content:center
     }
-    .btn:hover{background:#f8fafc}
-    .btn-primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
-    .btn-primary:hover{background:var(--blue-2)}
-    .btn-danger{color:var(--red)}
-    .btn-sm{padding:7px 10px;font-size:13px}
-    .btn-full{width:100%}
-
-    .search-row{display:flex;gap:8px;margin-bottom:14px}
-    .input,.select,.textarea{
-      width:100%;border:1px solid #d7e0eb;background:white;border-radius:10px;
-      min-height:38px;padding:8px 12px;outline:none;color:var(--text)
-    }
-    .input:focus,.select:focus,.textarea:focus{border-color:#9bb3ff;box-shadow:0 0 0 3px rgba(65,105,225,.10)}
-    .textarea{min-height:72px;resize:vertical}
-    .label{font-size:12px;color:var(--muted);margin-bottom:5px;display:block}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
-
-    .section-card{
+    .primary-btn{background:var(--primary);color:#fff;box-shadow:var(--shadow)}
+    .primary-btn:hover{background:var(--primary-2)}
+    .secondary-btn{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .danger-btn{background:var(--danger);color:#fff}
+    .card{
       background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
       box-shadow:var(--shadow);padding:16px;margin-bottom:14px
     }
     .section-title{
-      font-size:14px;font-weight:800;color:#5d7089;letter-spacing:.02em;margin:0 0 12px;text-transform:uppercase
+      margin:0 0 12px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;
+      color:#5d6b82;font-weight:800
     }
-
+    .search-row{display:grid;grid-template-columns:1fr 42px;gap:8px;margin-bottom:14px}
+    .input,.select,.textarea{
+      width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;
+      padding:10px 12px;color:var(--text);outline:none
+    }
+    .input:focus,.select:focus,.textarea:focus{
+      border-color:#9db0f8;box-shadow:0 0 0 3px rgba(65,103,232,.10)
+    }
+    .textarea{min-height:74px;resize:vertical}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field{margin-bottom:10px}
+    .field label{display:block;font-size:11px;color:#60708a;margin-bottom:5px}
     .sale-card{
-      background:white;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
-      padding:14px 16px;margin-bottom:12px
+      background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+      padding:16px;margin-bottom:12px
     }
-    .sale-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-    .sale-name{font-weight:800;font-size:14px}
-    .sale-client{font-size:12px;color:var(--muted);margin-top:3px}
-    .sale-meta{font-size:12px;color:var(--muted);margin-top:5px}
-    .sale-value{text-align:right;font-weight:800;white-space:nowrap}
-    .badge{
-      display:inline-flex;align-items:center;border-radius:999px;padding:3px 9px;font-size:11px;
-      margin-top:5px;font-weight:600
+    .sale-top{display:grid;grid-template-columns:1fr auto;gap:16px}
+    .sale-title{font-weight:800;font-size:14px;margin-bottom:4px}
+    .sale-sub{color:var(--muted);font-size:12px;line-height:1.6}
+    .sale-price{text-align:right;font-weight:800}
+    .status-pill{
+      display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;
+      margin-top:6px;font-weight:700
     }
-    .badge-paid{background:#d1fae5;color:#047857;border:1px solid #a7f3d0}
-    .badge-pending{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
-    .badge-cancel{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+    .status-paid{background:var(--success-soft);color:#087a46}
+    .status-pending{background:#fff2cc;color:#8a5a00}
+    .status-cancelled{background:var(--danger-soft);color:#c43234}
     .sale-bottom{
-      border-top:1px solid var(--line);margin-top:11px;padding-top:10px;
-      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      border-top:1px solid var(--line);margin-top:12px;padding-top:11px
     }
-    .checks{display:flex;gap:13px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
-    .check-ok{color:#059669}.check-no{color:#ef4444}
-    .sale-actions{display:flex;align-items:center;gap:6px;color:var(--muted)}
-    .whatsapp-share-btn{
-      border:1px solid #bbf7d0;background:#ecfdf5;color:#047857;border-radius:9px;
-      padding:6px 9px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700
+    .checks{display:flex;gap:13px;flex-wrap:wrap;font-size:12px;color:#5f6b7c}
+    .check.ok::before{
+      content:"✓";display:inline-grid;place-items:center;width:12px;height:12px;background:#12c96d;
+      color:#fff;border-radius:2px;margin-right:5px;font-size:10px;font-weight:900
     }
-    .whatsapp-share-btn:hover{background:#d1fae5}
-    .payment-label{font-size:12px;color:var(--muted);margin-right:4px}
-
-    .quick-wrap{display:flex;gap:8px;flex-wrap:wrap}
-    .quick-btn{
-      border:1px solid var(--line);background:white;border-radius:10px;padding:7px 12px;
-      display:flex;gap:8px;align-items:center;font-size:13px
+    .check.no::before{content:"✕";margin-right:5px;color:#ff4d67;font-weight:900}
+    .actions{display:flex;align-items:center;gap:4px}
+    .whatsapp{color:#07ad65!important;font-size:18px}
+    .delete{color:var(--danger)!important}
+    .pay-label{font-size:12px;color:#5f6b7c;margin-right:4px}
+    .quick-wrap{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+    .chip{
+      border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 11px;
+      font-size:12px;display:inline-flex;align-items:center;gap:7px
     }
-    .quick-btn.active{background:#eef2ff;border-color:#b8c5ff;color:#3158d2}
-    .selected-accessory{
-      display:grid;grid-template-columns:1fr 130px 36px;gap:8px;align-items:center;margin-top:8px
+    .chip:hover{border-color:#aebff9;background:#f8faff}
+    .chip.selected{background:var(--primary-soft);color:var(--primary);border-color:#b6c4fb}
+    .row-add{display:grid;grid-template-columns:1fr 38px;gap:8px}
+    .list-item{
+      border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;box-shadow:var(--shadow)
     }
-
-    .payment-card{background:#f8fafc;border-radius:12px;padding:12px;margin-top:10px}
-    .payment-title{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#475569;margin-bottom:10px}
-    .payment-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-
-    .switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:9px 0}
-    .switch{
-      appearance:none;width:36px;height:20px;border-radius:20px;background:#dbe3ec;position:relative;transition:.2s;flex:0 0 auto
+    .list-item-left{display:flex;gap:11px;align-items:center}
+    .cube{
+      width:30px;height:30px;border-radius:10px;background:var(--primary-soft);color:var(--primary);
+      display:grid;place-items:center;font-size:15px
     }
-    .switch:before{
-      content:"";width:16px;height:16px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;
-      box-shadow:0 1px 2px rgba(0,0,0,.12);transition:.2s
+    .list-item-title{font-size:13px;font-weight:700}
+    .list-item-meta{font-size:11px;color:var(--muted);margin-top:2px}
+    .mini-tag{
+      display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 8px;
+      margin-left:6px;color:#344054;background:#fff
     }
-    .switch:checked{background:var(--blue)}
-    .switch:checked:before{left:18px}
-
-    .summary{
-      background:#eef3ff;border:1px solid #bfceff;border-radius:12px;padding:14px;margin:14px 0
+    .switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;font-size:13px}
+    .switch{position:relative;width:32px;height:18px;display:inline-block;flex:0 0 auto}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;inset:0;background:#dfe5ed;border-radius:999px;transition:.2s}
+    .slider:before{
+      content:"";position:absolute;width:14px;height:14px;left:2px;top:2px;background:#fff;border-radius:50%;
+      transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.15)
     }
-    .summary-title{font-weight:800;font-size:14px;margin-bottom:10px}
-    .summary-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:6px 0;color:#5d7089}
-    .summary-row strong{color:#111827}
-    .summary-sep{height:1px;background:#d8e2fa;margin:8px 0}
-
-    .toast{
-      position:fixed;right:18px;bottom:18px;z-index:100;background:#111827;color:white;
-      padding:11px 14px;border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.18);font-size:13px
-    }
-    .modal-backdrop{
-      position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:90;display:grid;place-items:center;padding:18px
-    }
-    .modal{
-      width:min(680px,100%);max-height:90vh;overflow:auto;background:white;border-radius:14px;
-      box-shadow:0 20px 70px rgba(0,0,0,.25);padding:18px
-    }
-    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-    .modal-title{font-size:18px;font-weight:800}
-
-    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-    .stat{
-      background:white;border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)
-    }
-    .stat-label{font-size:12px;color:var(--muted)}
-    .stat-value{font-weight:800;font-size:20px;margin-top:4px}
-    .report-table{width:100%;border-collapse:collapse;font-size:13px}
-    .report-table th,.report-table td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left}
-    .empty{padding:40px 16px;text-align:center;color:var(--muted)}
+    .switch input:checked + .slider{background:var(--primary)}
+    .switch input:checked + .slider:before{transform:translateX(14px)}
+    .summary{background:#f2f5fb;border:1px solid #bfd0ff;border-radius:13px;padding:16px}
+    .summary h3{font-size:13px;margin:0 0 10px}
+    .summary-line{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:6px 0}
+    .summary-line strong{text-align:right;font-weight:800}
+    .green{color:#009c56}
+    .submit-wide{width:100%;margin-top:14px;padding:13px}
+    .payment-line{display:grid;grid-template-columns:1fr 140px 42px;gap:8px;margin-top:8px}
     .muted{color:var(--muted)}
-    .small{font-size:12px}
-
-    @media(max-width:850px){
-      aside{width:72px;padding:12px 8px}
-      .nav-btn span{display:none}
-      .nav-btn{justify-content:center}
-      main{padding:16px 12px 32px}
-      .stats-grid{grid-template-columns:1fr 1fr}
+    .empty{padding:45px 20px;text-align:center;color:var(--muted)}
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(16,24,40,.42);display:none;align-items:center;justify-content:center;
+      padding:20px;z-index:60
     }
-    @media(max-width:600px){
-      header{padding:0 10px}
-      aside{display:none}
-      main{padding:12px 9px 28px}
-      .container{max-width:none}
-      .grid2,.grid3,.payment-grid{grid-template-columns:1fr}
+    .modal-backdrop.show{display:flex}
+    .modal{
+      background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.22);
+      width:min(520px,100%);max-height:90vh;overflow:auto;padding:20px
+    }
+    .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .modal-head h3{margin:0;font-size:17px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}
+    .toast{
+      position:fixed;right:20px;bottom:20px;background:#111827;color:#fff;padding:11px 14px;border-radius:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;display:none;z-index:100
+    }
+    .toast.show{display:block}
+    .report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+    .metric{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+    .metric .k{font-size:12px;color:var(--muted)}
+    .metric .v{font-size:22px;font-weight:800;margin-top:4px}
+    .table{width:100%;border-collapse:collapse;font-size:12px}
+    .table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left}
+    .table th{color:#667085}
+
+    .login-screen{
+      position:fixed;inset:0;background:linear-gradient(135deg,#f7f9ff,#eef2ff);
+      display:grid;place-items:center;padding:20px;z-index:200
+    }
+    .login-card{
+      width:min(410px,100%);background:#fff;border:1px solid var(--line);
+      border-radius:18px;box-shadow:0 20px 50px rgba(49,86,217,.12);padding:24px
+    }
+    .login-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+    .login-brand .brand-logo{width:42px;height:42px}
+    .login-brand h1{font-size:20px;margin:0}
+    .login-brand p{font-size:12px;color:var(--muted);margin:3px 0 0}
+    .login-error{
+      display:none;background:#fff2f2;border:1px solid #ffc9c9;color:#b42318;
+      padding:9px 11px;border-radius:9px;font-size:12px;margin-bottom:10px
+    }
+    .login-error.show{display:block}
+    .loading-screen{
+      position:fixed;inset:0;background:#f6f8fc;display:grid;place-items:center;z-index:190;
+      color:#667085;font-size:13px
+    }
+    .spinner{
+      width:24px;height:24px;border:3px solid #dfe5ed;border-top-color:var(--primary);
+      border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @media(max-width:860px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{
+        position:fixed;left:0;right:0;bottom:0;top:auto;height:64px;z-index:40;
+        border-right:0;border-top:1px solid var(--line);padding:6px;
+        display:grid;grid-template-columns:repeat(4,1fr)
+      }
+      .nav-btn{justify-content:center;padding:8px 4px;margin:0;gap:4px;flex-direction:column;font-size:10px}
+      .main{padding:16px 12px 86px}
+      .user-email{display:none}
+    }
+    @media(max-width:580px){
+      .grid-2,.sale-top,.payment-line{grid-template-columns:1fr}
+      .sale-price{text-align:left}
+      .sale-bottom{align-items:flex-start;flex-direction:column}
+      .actions{width:100%;justify-content:flex-end}
+      .report-grid{grid-template-columns:1fr}
       .page-head{align-items:flex-start}
-      .sale-top{gap:6px}
-      .sale-value{font-size:13px}
-      .selected-accessory{grid-template-columns:1fr 105px 36px}
-      .stats-grid{grid-template-columns:1fr 1fr}
-      .brand-sub{display:none}
+      .page-head .primary-btn span.label{display:none}
+      .sync span{display:none}
     }
   </style>
 </head>
-
 <body>
-<header>
-  <div class="brand">
-    <div class="brand-badge"><i data-lucide="shopping-bag" size="18"></i></div>
-    <div>
-      <div class="brand-title">Ampertech</div>
-      <div class="brand-sub">Controle de Vendas</div>
-    </div>
-  </div>
-  <div class="header-actions">
-    <span id="storageMode" class="small muted"></span>
-    <button class="icon-btn" title="Recarregar" onclick="loadAll()"><i data-lucide="refresh-cw" size="18"></i></button>
-  </div>
-</header>
 
-<div class="layout">
-  <aside>
-    <button class="nav-btn active" data-page="sales" onclick="showPage('sales')"><i data-lucide="shopping-bag"></i><span>Vendas</span></button>
-    <button class="nav-btn" data-page="new" onclick="newSale()"><i data-lucide="plus"></i><span>Nova Venda</span></button>
-    <button class="nav-btn" data-page="accessories" onclick="showPage('accessories')"><i data-lucide="package"></i><span>Acessórios</span></button>
-    <button class="nav-btn" data-page="reports" onclick="showPage('reports')"><i data-lucide="chart-no-axes-column-increasing"></i><span>Relatórios</span></button>
-  </aside>
-
-  <main>
-    <section id="page-sales" class="page">
-      <div class="container">
-        <div class="page-head">
-          <h1 class="page-title">Vendas</h1>
-          <button class="btn btn-primary" onclick="newSale()"><i data-lucide="plus" size="17"></i> Nova Venda</button>
-        </div>
-        <div class="search-row">
-          <input id="salesSearch" class="input" placeholder="Buscar cliente ou celular..." oninput="renderSales()" />
-          <select id="salesFilter" class="select" style="max-width:150px" onchange="renderSales()">
-            <option value="all">Todas</option>
-            <option value="paid">Pagas</option>
-            <option value="pending">Pendentes</option>
-            <option value="cancelled">Canceladas</option>
-          </select>
-        </div>
-        <div id="salesList"></div>
-      </div>
-    </section>
-
-    <section id="page-new" class="page hidden">
-      <div class="container">
-        <div class="page-head">
-          <div style="display:flex;align-items:center;gap:10px">
-            <button class="icon-btn" onclick="showPage('sales')"><i data-lucide="arrow-left"></i></button>
-            <h1 class="page-title" id="saleFormTitle">Nova Venda</h1>
-          </div>
-        </div>
-
-        <input type="hidden" id="saleId" />
-
-        <div class="section-card">
-          <h2 class="section-title">Cliente e vendedor</h2>
-          <input class="input" id="clientName" placeholder="Nome do cliente *" />
-          <div class="grid2" style="margin-top:9px">
-            <input class="input" id="clientPhone" placeholder="Telefone" />
-            <select class="select" id="seller">
-              <option value="">Vendedor *</option>
-              <option>Dither</option>
-              <option>Josiane</option>
-              <option>Vinicius</option>
-            </select>
-          </div>
-          <input type="date" class="input" id="saleDate" style="margin-top:9px" />
-        </div>
-
-        <div class="section-card">
-          <h2 class="section-title">Dados do celular</h2>
-          <input class="input" id="deviceDescription" placeholder="Descrição do celular *" />
-          <input class="input" id="imei" placeholder="IMEI / Nº Série" style="margin-top:9px" />
-          <label class="label" style="margin-top:10px">Valor final da venda</label>
-          <input class="input money" id="finalValue" placeholder="0,00" inputmode="decimal" oninput="updateSummary()" />
-        </div>
-
-        <div class="section-card">
-          <h2 class="section-title">Acessórios</h2>
-          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Acessórios rápidos</div>
-          <div id="quickAccessories" class="quick-wrap"></div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <input id="manualAccessory" class="input" placeholder="Adicionar acessório manual..." />
-            <button class="btn" onclick="addManualAccessory()"><i data-lucide="plus" size="16"></i></button>
-          </div>
-          <div id="selectedAccessories"></div>
-        </div>
-
-        <div class="section-card">
-          <h2 class="section-title">Pagamentos</h2>
-          <div id="payments"></div>
-          <button class="btn btn-full" onclick="addPayment()"><i data-lucide="plus" size="16"></i> Adicionar Pagamento</button>
-        </div>
-
-        <div class="section-card">
-          <h2 class="section-title">Checklist</h2>
-          <label class="switch-row"><span>Postado saindo para entrega</span><input type="checkbox" class="switch" id="postedDelivery" /></label>
-          <label class="switch-row"><span>Postado/marcado vendido</span><input type="checkbox" class="switch" id="postedSold" /></label>
-          <label class="switch-row"><span>Postado no GrupoVenda</span><input type="checkbox" class="switch" id="postedGroup" /></label>
-        </div>
-
-        <div class="section-card">
-          <h2 class="section-title">Status & observações</h2>
-          <label style="display:flex;align-items:center;gap:10px;color:#5d7089;font-size:13px">
-            Forçar cancelamento:
-            <input type="checkbox" class="switch" id="forceCancel" onchange="updateSummary()" />
-          </label>
-          <textarea id="notes" class="textarea" placeholder="Observações..." style="margin-top:10px"></textarea>
-        </div>
-
-        <div class="summary">
-          <div class="summary-title">Resumo</div>
-          <div class="summary-row"><span>Acessórios cobrados</span><span id="sumAccessories">R$ 0,00</span></div>
-          <div class="summary-row"><span>Valor final</span><strong id="sumFinal">R$ 0,00</strong></div>
-          <div class="summary-row"><span>Total recebido</span><span id="sumReceived">R$ 0,00</span></div>
-          <div class="summary-sep"></div>
-          <div class="summary-row"><span>Saldo pendente</span><strong id="sumPending">R$ 0,00</strong></div>
-          <div class="summary-row"><span>Status</span><strong id="sumStatus">Pendente</strong></div>
-        </div>
-
-        <button class="btn btn-primary btn-full" style="font-size:15px;padding:12px" onclick="saveSale()">
-          <i data-lucide="save" size="17"></i> <span id="saveSaleText">Cadastrar Venda</span>
-        </button>
-      </div>
-    </section>
-
-    <section id="page-accessories" class="page hidden">
-      <div class="container">
-        <div class="page-head">
-          <h1 class="page-title">Acessórios rápidos</h1>
-        </div>
-        <div class="section-card">
-          <div class="grid2">
-            <input id="newAccessoryName" class="input" placeholder="Nome do acessório" />
-            <button class="btn btn-primary" onclick="createQuickAccessory()"><i data-lucide="plus" size="16"></i> Adicionar</button>
-          </div>
-          <div id="accessoriesManagement" style="margin-top:14px"></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="page-reports" class="page hidden">
-      <div class="container" style="max-width:980px">
-        <div class="page-head"><h1 class="page-title">Relatórios</h1></div>
-        <div id="reportStats" class="stats-grid"></div>
-        <div class="section-card">
-          <h2 class="section-title">Por vendedor</h2>
-          <div id="sellerReport"></div>
-        </div>
-        <div class="section-card">
-          <h2 class="section-title">Por forma de pagamento</h2>
-          <div id="paymentReport"></div>
-        </div>
-      </div>
-    </section>
-  </main>
+<div id="loadingScreen" class="loading-screen">
+  <div><div class="spinner"></div>Conectando ao Firebase...</div>
 </div>
 
-<div id="modalRoot"></div>
-<div id="toastRoot"></div>
+<div id="loginScreen" class="login-screen" hidden>
+  <form id="loginForm" class="login-card">
+    <div class="login-brand">
+      <div class="brand-logo">A</div>
+      <div><h1>Ampertech</h1><p>Controle de Vendas</p></div>
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <div class="field">
+      <label>E-mail</label>
+      <input id="loginEmail" class="input" type="email" autocomplete="username" required placeholder="seuemail@exemplo.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input id="loginPassword" class="input" type="password" autocomplete="current-password" required placeholder="••••••••">
+    </div>
+    <button id="loginButton" class="primary-btn" style="width:100%;margin-top:4px" type="submit">Entrar</button>
+    <div class="muted" style="font-size:11px;margin-top:12px;line-height:1.5">
+      Os usuários são criados no Firebase Authentication. O sistema não permite cadastro público.
+    </div>
+  </form>
+</div>
+
+<div id="app" class="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">A</div>
+      <div class="brand-text"><strong>Ampertech</strong><span>Controle de Vendas</span></div>
+    </div>
+    <div class="top-actions">
+      <div id="syncBadge" class="sync"><span class="sync-dot"></span><span id="syncText">Sincronizando</span></div>
+      <div id="userEmail" class="user-email"></div>
+      <button id="logoutButton" class="icon-btn" title="Sair">⇥</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <button class="nav-btn active" data-view="sales" onclick="navigate('sales')"><span>▣</span>Vendas</button>
+      <button class="nav-btn" data-view="new" onclick="openNewSale()"><span>＋</span>Nova Venda</button>
+      <button class="nav-btn" data-view="accessories" onclick="navigate('accessories')"><span>◇</span>Acessórios</button>
+      <button class="nav-btn" data-view="reports" onclick="navigate('reports')"><span>⌁</span>Relatórios</button>
+    </aside>
+
+    <main class="main">
+      <section id="view-sales" class="view">
+        <div class="content wide">
+          <div class="page-head">
+            <h1>Vendas</h1>
+            <button class="primary-btn" onclick="openNewSale()">＋ <span class="label">Nova Venda</span></button>
+          </div>
+          <div class="search-row">
+            <input id="saleSearch" class="input" placeholder="Buscar cliente ou celular..." oninput="renderSales()">
+            <button class="secondary-btn" title="Filtrar pagas" onclick="togglePaidFilter()">⌁</button>
+          </div>
+          <div id="salesList"></div>
+        </div>
+      </section>
+
+      <section id="view-new" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <div class="back-title">
+              <button class="icon-btn" onclick="navigate('sales')">←</button>
+              <h1 id="saleFormTitle">Nova Venda</h1>
+            </div>
+          </div>
+
+          <form id="saleForm">
+            <div class="card">
+              <h2 class="section-title">Cliente e Vendedor</h2>
+              <div class="field"><input id="client" class="input" required placeholder="Nome do cliente *"></div>
+              <div class="grid-2">
+                <div class="field"><input id="phone" class="input" placeholder="Telefone"></div>
+                <div class="field">
+                  <select id="seller" class="select" required>
+                    <option value="">Vendedor *</option>
+                    <option>Dither</option>
+                    <option>Vinícius</option>
+                    <option>Vanderson</option>
+                    <option>Giovani</option>
+                    <option>Outro</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field"><input id="date" class="input" type="date" required></div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Dados do Celular</h2>
+              <div class="field"><input id="device" class="input" required placeholder="Descrição do celular *"></div>
+              <div class="field"><input id="imei" class="input" placeholder="IMEI / Nº Série"></div>
+              <div class="field">
+                <label>Valor final da venda</label>
+                <input id="finalValue" class="input" inputmode="decimal" placeholder="0,00" oninput="updateSummary()">
+              </div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Acessórios</h2>
+              <div style="font-size:13px;font-weight:700;margin-bottom:8px">Acessórios rápidos</div>
+              <div id="quickAccessories" class="quick-wrap"></div>
+              <div class="row-add">
+                <input id="manualAccessory" class="input" placeholder="Adicionar acessório manual...">
+                <button type="button" class="secondary-btn" onclick="addManualAccessory()">＋</button>
+              </div>
+              <div id="selectedAccessories" style="margin-top:10px"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Pagamentos</h2>
+              <button type="button" class="secondary-btn" style="width:100%" onclick="addPayment()">＋ Adicionar Pagamento</button>
+              <div id="payments"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Checklist</h2>
+              <div class="switch-row"><span>Postado saindo para entrega</span><label class="switch"><input id="delivery" type="checkbox"><span class="slider"></span></label></div>
+              <div class="switch-row"><span>Postado/marcado vendido</span><label class="switch"><input id="soldPost" type="checkbox"><span class="slider"></span></label></div>
+              <div class="switch-row"><span>Postado no GrupoVenda</span><label class="switch"><input id="groupPost" type="checkbox"><span class="slider"></span></label></div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Status & Observações</h2>
+              <div class="switch-row" style="justify-content:flex-start">
+                <span class="muted">Forçar cancelamento:</span>
+                <label class="switch"><input id="cancelled" type="checkbox"><span class="slider"></span></label>
+              </div>
+              <textarea id="notes" class="textarea" placeholder="Observações..."></textarea>
+            </div>
+
+            <div class="summary">
+              <h3>Resumo</h3>
+              <div class="summary-line"><span class="muted">Acessórios cobrados</span><strong id="sumAccessories">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Valor final</span><strong id="sumFinal">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Total recebido</span><strong id="sumReceived">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Líquido recebido</span><strong id="sumNet">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Saldo pendente</span><strong id="sumPending" class="green">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Status</span><strong id="sumStatus">Pendente</strong></div>
+            </div>
+            <button id="saveSaleButton" class="primary-btn submit-wide" type="submit">▣ <span id="saveSaleLabel">Cadastrar Venda</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-accessories" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <h1>Acessórios</h1>
+            <button class="primary-btn" onclick="openAccessoryModal()">＋ Novo</button>
+          </div>
+          <div id="accessoryList"></div>
+        </div>
+      </section>
+
+      <section id="view-reports" class="view" hidden>
+        <div class="content wide">
+          <div class="page-head"><h1>Relatórios</h1></div>
+          <div id="reportMetrics" class="report-grid"></div>
+          <div class="card">
+            <h2 class="section-title">Resumo por vendedor</h2>
+            <div style="overflow:auto">
+              <table class="table">
+                <thead><tr><th>Vendedor</th><th>Vendas</th><th>Valor vendido</th><th>Recebido</th></tr></thead>
+                <tbody id="sellerReport"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div id="accessoryModal" class="modal-backdrop" onclick="if(event.target===this) closeAccessoryModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="accessoryModalTitle">Novo acessório</h3>
+      <button class="icon-btn" onclick="closeAccessoryModal()">✕</button>
+    </div>
+    <input id="accName" class="input" placeholder="Nome do acessório">
+    <div class="grid-2" style="margin-top:10px">
+      <input id="accPrice" class="input" inputmode="decimal" placeholder="Preço: 0,00">
+      <input id="accCategory" class="input" placeholder="Categoria">
+    </div>
+    <div class="modal-actions">
+      <button class="secondary-btn" onclick="closeAccessoryModal()">Cancelar</button>
+      <button id="saveAccessoryButton" class="primary-btn" onclick="saveAccessory()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="viewModal" class="modal-backdrop" onclick="if(event.target===this) closeViewModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Detalhes da venda</h3>
+      <button class="icon-btn" onclick="closeViewModal()">✕</button>
+    </div>
+    <div id="viewSaleBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
 
 <script type="module">
-  /*
-    ============================================================
-    FIREBASE
-    ============================================================
-    1) Crie um projeto no Firebase
-    2) Ative Firestore Database
-    3) Cole abaixo a configuração do seu projeto
-    4) Se os campos ficarem com "COLE_AQUI", o sistema usa
-       localStorage apenas para testes neste navegador.
-  */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot,
+    getDocs, writeBatch, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
 
   const firebaseConfig = {
-    apiKey: "COLE_AQUI",
-    authDomain: "COLE_AQUI",
-    projectId: "COLE_AQUI",
-    storageBucket: "COLE_AQUI",
-    messagingSenderId: "COLE_AQUI",
-    appId: "COLE_AQUI"
+    apiKey: "AIzaSyA2dJAznBnl5vya15tqB7Xozb35xYMEnsU",
+    authDomain: "loja-165c1.firebaseapp.com",
+    projectId: "loja-165c1",
+    storageBucket: "loja-165c1.firebasestorage.app",
+    messagingSenderId: "292042890163",
+    appId: "1:292042890163:web:b7f4e3d7983f2b0b5449c6"
   };
 
-  const useFirebase = !Object.values(firebaseConfig).some(v => String(v).includes("COLE_AQUI"));
+  const firebaseApp = initializeApp(firebaseConfig);
+  const db = getFirestore(firebaseApp);
+  const auth = getAuth(firebaseApp);
 
-  let db = null;
-  let firebaseFns = null;
-
-  if (useFirebase) {
-    try {
-      const appMod = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js");
-      const fsMod = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
-      const app = appMod.initializeApp(firebaseConfig);
-      db = fsMod.getFirestore(app);
-      firebaseFns = fsMod;
-    } catch (err) {
-      console.error("Falha ao iniciar Firebase:", err);
-    }
-  }
-
-  window.APP = {
-    useFirebase: !!db,
-    db,
-    firebaseFns,
-    sales: [],
-    quickAccessories: [],
-    selectedAccessories: [],
-    payments: []
-  };
-
-  document.getElementById("storageMode").textContent = db ? "Firebase" : "Modo local";
-  await window.loadAll();
-</script>
-
-<script>
-  const DEFAULT_ACCESSORIES = [
-    "Brinde Dia Dos Namorados",
-    "Capa Especial",
-    "Fonte Xiaomi",
-    "Fonte Apple",
-    "Capa Normal",
-    "Película",
-    "Fonte Gold",
-    "Cabo iPhone"
+  const defaultAccessories = [
+    {id:"brinde-dia-dos-namorados",name:"Brinde Dia Dos Namorados",price:0,category:"Brindes"},
+    {id:"cabo-iphone",name:"Cabo iPhone",price:0,category:"Carregamento"},
+    {id:"capa-especial",name:"Capa Especial",price:0,category:""},
+    {id:"capa-normal",name:"Capa Normal",price:0,category:"Proteção"},
+    {id:"fonte-apple",name:"Fonte Apple",price:0,category:""},
+    {id:"fonte-gold",name:"Fonte Gold",price:0,category:"Carregamento"},
+    {id:"fonte-xiaomi",name:"Fonte Xiaomi",price:0,category:"Carregamento"},
+    {id:"pelicula",name:"Película",price:0,category:"Proteção"}
   ];
 
-  const PAYMENT_METHODS = [
-    "Pix","Dinheiro","Cartão de crédito","Cartão de débito","Link de pagamento",
-    "Financiamento","Troca com volta","Fiado","Outro"
-  ];
+  let sales = [];
+  let accessories = [];
+  let editingSaleId = null;
+  let editingAccessoryId = null;
+  let selectedAccessories = [];
+  let paymentRows = [];
+  let paidOnly = false;
+  let stopSalesListener = null;
+  let stopAccessoriesListener = null;
+  let currentUser = null;
 
-  const PAYMENT_DESTINATIONS = [
-    "Conta Vini","InfinityPay","Stone","Cresol","Gaveta","Pix Loja","Outros"
-  ];
+  const $ = id => document.getElementById(id);
 
   function uid(){
-    return (crypto.randomUUID ? crypto.randomUUID() : Date.now()+"-"+Math.random().toString(16).slice(2));
+    return (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now().toString(36));
   }
-
-  function brl(n){
-    return Number(n || 0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  function money(v){
+    return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v)||0);
   }
-
-  function nval(v){
-    if(typeof v === "number") return v;
-    if(!v) return 0;
-    const s = String(v).trim().replace(/\s/g,"").replace(/^R\$/i,"");
-    if(s.includes(",") && s.includes(".")) return Number(s.replace(/\./g,"").replace(",", ".")) || 0;
-    if(s.includes(",")) return Number(s.replace(",", ".")) || 0;
-    return Number(s) || 0;
+  function num(v){
+    if(typeof v === "number") return Number.isFinite(v) ? v : 0;
+    v = String(v ?? "").trim().replace(/\s/g,"");
+    if(v.includes(",") && v.includes(".")) v = v.replace(/\./g,"").replace(",",".");
+    else if(v.includes(",")) v = v.replace(",",".");
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
   }
-
-  function fmtDate(iso){
+  function formatDate(iso){
     if(!iso) return "";
-    const [y,m,d] = iso.split("-");
-    return `${d}/${m}/${y}`;
+    const p = String(iso).split("-");
+    return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
   }
-
   function todayISO(){
     const d = new Date();
-    const z = n => String(n).padStart(2,"0");
-    return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+    const off = d.getTimezoneOffset();
+    return new Date(d.getTime()-off*60000).toISOString().slice(0,10);
   }
-
-  function esc(s=""){
-    return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
   }
-
   function toast(msg){
-    const root = document.getElementById("toastRoot");
-    root.innerHTML = `<div class="toast">${esc(msg)}</div>`;
-    setTimeout(()=>root.innerHTML="",2400);
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(()=>el.classList.remove("show"),2400);
+  }
+  function setSync(state, text){
+    const badge = $("syncBadge");
+    badge.classList.remove("ok","err");
+    if(state) badge.classList.add(state);
+    $("syncText").textContent = text;
+  }
+  function firebaseErrorMessage(error){
+    const code = error?.code || "";
+    const map = {
+      "auth/invalid-credential":"E-mail ou senha incorretos.",
+      "auth/user-not-found":"Usuário não encontrado.",
+      "auth/wrong-password":"Senha incorreta.",
+      "auth/too-many-requests":"Muitas tentativas. Aguarde um pouco.",
+      "auth/network-request-failed":"Falha de rede. Verifique sua conexão.",
+      "permission-denied":"Sem permissão no Firestore. Confira as regras de segurança."
+    };
+    return map[code] || map[String(code).replace("firestore/","")] || error?.message || "Ocorreu um erro.";
   }
 
-  function refreshIcons(){
-    if(window.lucide) lucide.createIcons();
+  async function seedAccessoriesIfNeeded(){
+    const snap = await getDocs(collection(db,"acessorios"));
+    if(!snap.empty) return;
+    const batch = writeBatch(db);
+    defaultAccessories.forEach(a=>{
+      batch.set(doc(db,"acessorios",a.id),{
+        name:a.name,price:a.price,category:a.category,
+        createdAt:serverTimestamp(),createdBy:currentUser?.uid || null
+      });
+    });
+    await batch.commit();
   }
 
-  async function localGet(key, fallback){
-    try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch{return fallback}
-  }
+  function startRealtime(){
+    if(stopSalesListener) stopSalesListener();
+    if(stopAccessoriesListener) stopAccessoriesListener();
 
-  async function localSet(key, value){
-    localStorage.setItem(key, JSON.stringify(value));
-  }
+    setSync("", "Sincronizando");
 
-  window.loadAll = async function(){
-    if(!window.APP) return;
-
-    if(APP.useFirebase){
-      try{
-        const {collection,getDocs,query,orderBy} = APP.firebaseFns;
-        const snap = await getDocs(query(collection(APP.db,"vendas"), orderBy("createdAt","desc")));
-        APP.sales = snap.docs.map(d=>({id:d.id,...d.data()}));
-
-        const accSnap = await getDocs(collection(APP.db,"acessoriosRapidos"));
-        APP.quickAccessories = accSnap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.name);
-
-        if(!APP.quickAccessories.length){
-          APP.quickAccessories = DEFAULT_ACCESSORIES.map(name=>({id:uid(),name}));
-        }
-      }catch(err){
+    stopSalesListener = onSnapshot(
+      collection(db,"vendas"),
+      snap=>{
+        sales = snap.docs.map(d=>({id:d.id,...d.data()}));
+        renderSales();
+        renderReports();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
         console.error(err);
-        toast("Erro ao carregar Firebase");
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
       }
-    }else{
-      APP.sales = await localGet("ampertech_sales", []);
-      APP.quickAccessories = await localGet("ampertech_accessories", DEFAULT_ACCESSORIES.map(name=>({id:uid(),name})));
-      await localSet("ampertech_accessories", APP.quickAccessories);
+    );
+
+    stopAccessoriesListener = onSnapshot(
+      collection(db,"acessorios"),
+      snap=>{
+        accessories = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+        renderAccessories();
+        renderQuickAccessories();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
+  }
+
+  $("loginForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const email = $("loginEmail").value.trim();
+    const password = $("loginPassword").value;
+    const btn = $("loginButton");
+    const errorBox = $("loginError");
+
+    errorBox.classList.remove("show");
+    btn.disabled = true;
+    btn.textContent = "Entrando...";
+
+    try{
+      await signInWithEmailAndPassword(auth,email,password);
+    }catch(error){
+      errorBox.textContent = firebaseErrorMessage(error);
+      errorBox.classList.add("show");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "Entrar";
+    }
+  });
+
+  $("logoutButton").addEventListener("click", async ()=>{
+    try{ await signOut(auth); }
+    catch(e){ toast(firebaseErrorMessage(e)); }
+  });
+
+  onAuthStateChanged(auth, async user=>{
+    $("loadingScreen").hidden = true;
+
+    if(!user){
+      currentUser = null;
+      $("app").hidden = true;
+      $("loginScreen").hidden = false;
+      if(stopSalesListener){ stopSalesListener(); stopSalesListener=null; }
+      if(stopAccessoriesListener){ stopAccessoriesListener(); stopAccessoriesListener=null; }
+      return;
     }
 
-    renderSales();
-    renderQuickAccessories();
-    renderAccessoriesManagement();
-    renderReports();
-    refreshIcons();
-  }
+    currentUser = user;
+    $("userEmail").textContent = user.email || "Usuário autenticado";
+    $("loginScreen").hidden = true;
+    $("app").hidden = false;
 
-  window.showPage = function(page){
-    document.querySelectorAll(".page").forEach(el=>el.classList.add("hidden"));
-    document.getElementById(`page-${page}`).classList.remove("hidden");
-    document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
-    if(page==="reports") renderReports();
-    if(page==="accessories") renderAccessoriesManagement();
+    try{
+      await seedAccessoriesIfNeeded();
+      startRealtime();
+    }catch(error){
+      console.error(error);
+      setSync("err","Erro");
+      toast(firebaseErrorMessage(error));
+    }
+  });
+
+  function navigate(view){
+    document.querySelectorAll(".view").forEach(v=>v.hidden=true);
+    $("view-"+view).hidden=false;
+    document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+    if(view==="sales") renderSales();
+    if(view==="accessories") renderAccessories();
+    if(view==="reports") renderReports();
     window.scrollTo({top:0,behavior:"smooth"});
-    refreshIcons();
   }
 
-  window.newSale = function(){
-    resetSaleForm();
-    showPage("new");
+  function togglePaidFilter(){
+    paidOnly=!paidOnly;
+    toast(paidOnly ? "Filtro: apenas vendas pagas" : "Filtro removido");
+    renderSales();
   }
 
-  function resetSaleForm(){
-    document.getElementById("saleId").value="";
-    document.getElementById("saleFormTitle").textContent="Nova Venda";
-    document.getElementById("saveSaleText").textContent="Cadastrar Venda";
-    document.getElementById("clientName").value="";
-    document.getElementById("clientPhone").value="";
-    document.getElementById("seller").value="";
-    document.getElementById("saleDate").value=todayISO();
-    document.getElementById("deviceDescription").value="";
-    document.getElementById("imei").value="";
-    document.getElementById("finalValue").value="";
-    document.getElementById("postedDelivery").checked=false;
-    document.getElementById("postedSold").checked=false;
-    document.getElementById("postedGroup").checked=false;
-    document.getElementById("forceCancel").checked=false;
-    document.getElementById("notes").value="";
-    APP.selectedAccessories=[];
-    APP.payments=[];
+  function saleStatus(s){
+    if(s.cancelled) return "Cancelado";
+    const final = num(s.finalValue);
+    const received = (s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
+    return final>0 && received+0.009>=final ? "Pago" : "Pendente";
+  }
+
+  function renderSales(){
+    const q = ($("saleSearch")?.value||"").toLowerCase().trim();
+    let list = sales.slice().sort((a,b)=>(b.createdAtMs||0)-(a.createdAtMs||0));
+    if(q) list=list.filter(s=>(`${s.client||""} ${s.device||""} ${s.seller||""}`).toLowerCase().includes(q));
+    if(paidOnly) list=list.filter(s=>saleStatus(s)==="Pago");
+
+    const wrap=$("salesList");
+    if(!wrap) return;
+
+    if(!list.length){
+      wrap.innerHTML=`<div class="card empty">
+        <div style="font-size:34px;margin-bottom:8px">▣</div>
+        <strong>Nenhuma venda encontrada</strong>
+        <div style="margin-top:5px">Clique em “Nova Venda” para começar.</div>
+      </div>`;
+      return;
+    }
+
+    wrap.innerHTML=list.map(s=>{
+      const status=saleStatus(s);
+      const pill=status==="Pago"?"status-paid":status==="Cancelado"?"status-cancelled":"status-pending";
+      const p=(s.payments||[])[0]?.method || "—";
+      return `
+      <div class="sale-card">
+        <div class="sale-top">
+          <div>
+            <div class="sale-title">▯ &nbsp;${escapeHtml(s.device)}</div>
+            <div class="sale-sub">${escapeHtml(s.client)}<br>${formatDate(s.date)} &nbsp;•&nbsp; ${escapeHtml(s.seller||"")}</div>
+          </div>
+          <div>
+            <div class="sale-price">${money(s.finalValue)}</div>
+            <div class="status-pill ${pill}">${status}</div>
+          </div>
+        </div>
+        <div class="sale-bottom">
+          <div class="checks">
+            <span class="check ${s.delivery?"ok":"no"}">Entrega</span>
+            <span class="check ${s.soldPost?"ok":"no"}">Vendido</span>
+            <span class="check ${s.groupPost?"ok":"no"}">GrupoVenda</span>
+          </div>
+          <div class="actions">
+            <span class="pay-label">${escapeHtml(p)}</span>
+            <button class="icon-btn whatsapp" title="Enviar pelo WhatsApp" onclick="sendWhatsApp('${s.id}')">◉</button>
+            <button class="icon-btn" title="Visualizar" onclick="viewSale('${s.id}')">◉</button>
+            <button class="icon-btn" title="Editar" onclick="editSale('${s.id}')">✎</button>
+            <button class="icon-btn delete" title="Excluir" onclick="deleteSale('${s.id}')">♲</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function openNewSale(){
+    editingSaleId=null;
+    selectedAccessories=[];
+    paymentRows=[];
+    $("saleForm").reset();
+    $("date").value=todayISO();
+    $("saleFormTitle").textContent="Nova Venda";
+    $("saveSaleLabel").textContent="Cadastrar Venda";
     renderQuickAccessories();
     renderSelectedAccessories();
     renderPayments();
     updateSummary();
+    navigate("new");
   }
 
-  window.renderSales = function(){
-    if(!window.APP) return;
-    const root = document.getElementById("salesList");
-    const q = (document.getElementById("salesSearch")?.value || "").toLowerCase().trim();
-    const filter = document.getElementById("salesFilter")?.value || "all";
+  function editSale(id){
+    const s=sales.find(x=>x.id===id); if(!s) return;
+    editingSaleId=id;
+    $("client").value=s.client||"";
+    $("phone").value=s.phone||"";
+    $("seller").value=s.seller||"";
+    $("date").value=s.date||todayISO();
+    $("device").value=s.device||"";
+    $("imei").value=s.imei||"";
+    $("finalValue").value=num(s.finalValue) ? num(s.finalValue).toFixed(2).replace(".",",") : "";
+    $("delivery").checked=!!s.delivery;
+    $("soldPost").checked=!!s.soldPost;
+    $("groupPost").checked=!!s.groupPost;
+    $("cancelled").checked=!!s.cancelled;
+    $("notes").value=s.notes||"";
+    selectedAccessories=JSON.parse(JSON.stringify(s.accessories||[]));
+    paymentRows=JSON.parse(JSON.stringify(s.payments||[]));
+    $("saleFormTitle").textContent="Editar Venda";
+    $("saveSaleLabel").textContent="Salvar Alterações";
+    renderQuickAccessories();
+    renderSelectedAccessories();
+    renderPayments();
+    updateSummary();
+    navigate("new");
+  }
 
-    const rows = APP.sales.filter(s=>{
-      const hay = `${s.clientName||""} ${s.deviceDescription||""} ${s.seller||""} ${s.imei||""}`.toLowerCase();
-      if(q && !hay.includes(q)) return false;
-      if(filter==="paid" && s.status!=="Pago") return false;
-      if(filter==="pending" && s.status!=="Pendente") return false;
-      if(filter==="cancelled" && s.status!=="Cancelado") return false;
-      return true;
-    }).sort((a,b)=>(b.saleDate||"").localeCompare(a.saleDate||"") || (b.createdAt||0)-(a.createdAt||0));
+  $("saleForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    if(!currentUser){ toast("Faça login novamente."); return; }
 
-    if(!rows.length){
-      root.innerHTML=`<div class="empty">Nenhuma venda encontrada.</div>`;
-      return;
+    const btn=$("saveSaleButton");
+    btn.disabled=true;
+    const oldLabel=$("saveSaleLabel").textContent;
+    $("saveSaleLabel").textContent="Salvando...";
+
+    const id = editingSaleId || uid();
+    const old = sales.find(x=>x.id===editingSaleId);
+
+    const item={
+      client:$("client").value.trim(),
+      phone:$("phone").value.trim(),
+      seller:$("seller").value,
+      date:$("date").value,
+      device:$("device").value.trim(),
+      imei:$("imei").value.trim(),
+      finalValue:num($("finalValue").value),
+      accessories:selectedAccessories.map(a=>({
+        id:a.id||uid(),
+        sourceId:a.sourceId||null,
+        name:String(a.name||""),
+        price:num(a.price)
+      })),
+      payments:collectPayments(),
+      delivery:$("delivery").checked,
+      soldPost:$("soldPost").checked,
+      groupPost:$("groupPost").checked,
+      cancelled:$("cancelled").checked,
+      notes:$("notes").value.trim(),
+      createdAt:old?.createdAt || serverTimestamp(),
+      createdAtMs:old?.createdAtMs || Date.now(),
+      updatedAt:serverTimestamp(),
+      updatedAtMs:Date.now(),
+      createdBy:old?.createdBy || currentUser.uid,
+      createdByEmail:old?.createdByEmail || currentUser.email || "",
+      updatedBy:currentUser.uid,
+      updatedByEmail:currentUser.email || ""
+    };
+
+    try{
+      setSync("","Salvando");
+      await setDoc(doc(db,"vendas",id),item,{merge:true});
+      toast(editingSaleId ? "Venda atualizada." : "Venda cadastrada.");
+      navigate("sales");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+      setSync("err","Erro ao salvar");
+    }finally{
+      btn.disabled=false;
+      $("saveSaleLabel").textContent=oldLabel;
     }
+  });
 
-    root.innerHTML = rows.map(s=>{
-      const statusClass=s.status==="Pago"?"badge-paid":s.status==="Cancelado"?"badge-cancel":"badge-pending";
-      const pMethods = [...new Set((s.payments||[]).map(p=>p.method).filter(Boolean))].join(" + ") || "Sem pagamento";
-      const phone = String(s.clientPhone||"").replace(/\D/g,"");
-      const wa = phone ? `https://wa.me/55${phone}` : "";
-      const flag = (ok,label)=>`<span class="${ok?"check-ok":"check-no"}">${ok?"☑":"✕"} <span class="muted">${label}</span></span>`;
-      return `
-        <div class="sale-card">
-          <div class="sale-top">
-            <div>
-              <div class="sale-name">▯ ${esc(s.deviceDescription||"Sem descrição")}</div>
-              <div class="sale-client">${esc(s.clientName||"Cliente não informado")}</div>
-              <div class="sale-meta">${fmtDate(s.saleDate)} &nbsp;•&nbsp; ${esc(s.seller||"-")}</div>
-            </div>
-            <div>
-              <div class="sale-value">${brl(s.finalValue)}</div>
-              <div style="text-align:right"><span class="badge ${statusClass}">${esc(s.status||"Pendente")}</span></div>
-            </div>
-          </div>
-          <div class="sale-bottom">
-            <div class="checks">
-              ${flag(!!s.postedDelivery,"Entrega")}
-              ${flag(!!s.postedSold,"Vendido")}
-              ${flag(!!s.postedGroup,"GrupoVenda")}
-            </div>
-            <div class="sale-actions">
-              <span class="payment-label">${esc(pMethods)}</span>
-              <button class="whatsapp-share-btn" title="Enviar informações da venda pelo WhatsApp" onclick="sendSaleWhatsApp('${s.id}')">
-                <i data-lucide="message-circle" size="16"></i> WhatsApp
-              </button>
-              <button class="icon-btn" title="Visualizar" onclick="viewSale('${s.id}')"><i data-lucide="eye" size="17"></i></button>
-              <button class="icon-btn" title="Editar" onclick="editSale('${s.id}')"><i data-lucide="pencil" size="17"></i></button>
-              <button class="icon-btn" title="Excluir" style="color:#ef4444" onclick="deleteSale('${s.id}')"><i data-lucide="trash-2" size="17"></i></button>
-            </div>
-          </div>
-        </div>`;
-    }).join("");
-
-    refreshIcons();
+  async function deleteSale(id){
+    const s=sales.find(x=>x.id===id); if(!s) return;
+    if(!confirm(`Excluir a venda de ${s.client}?`)) return;
+    try{
+      setSync("","Excluindo");
+      await deleteDoc(doc(db,"vendas",id));
+      toast("Venda excluída.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
   }
 
-  window.renderQuickAccessories = function(){
-    if(!window.APP) return;
-    const root=document.getElementById("quickAccessories");
-    if(!root) return;
-    root.innerHTML=APP.quickAccessories.map(a=>{
-      const active=APP.selectedAccessories.some(x=>x.name===a.name);
-      return `<button class="quick-btn ${active?"active":""}" onclick="toggleAccessory('${a.id}')"><i data-lucide="${active?"check":"plus"}" size="15"></i>${esc(a.name)}</button>`;
-    }).join("");
-    refreshIcons();
+  function viewSale(id){
+    const s=sales.find(x=>x.id===id); if(!s) return;
+    const received=(s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
+    const acc=(s.accessories||[]).map(a=>`${escapeHtml(a.name)} (${money(a.price)})`).join("<br>") || "Nenhum";
+    const pays=(s.payments||[]).map(p=>`${escapeHtml(p.method)} — ${money(p.amount)}`).join("<br>") || "Nenhum";
+
+    $("viewSaleBody").innerHTML=`
+      <div class="summary-line"><span>Cliente</span><strong>${escapeHtml(s.client)}</strong></div>
+      <div class="summary-line"><span>Telefone</span><strong>${escapeHtml(s.phone||"—")}</strong></div>
+      <div class="summary-line"><span>Aparelho</span><strong>${escapeHtml(s.device)}</strong></div>
+      <div class="summary-line"><span>IMEI / Série</span><strong>${escapeHtml(s.imei||"—")}</strong></div>
+      <div class="summary-line"><span>Vendedor</span><strong>${escapeHtml(s.seller||"—")}</strong></div>
+      <div class="summary-line"><span>Data</span><strong>${formatDate(s.date)}</strong></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Acessórios</div>
+      <div style="font-size:13px">${acc}</div>
+      <div style="font-size:12px;color:var(--muted);margin:12px 0 4px">Pagamentos</div>
+      <div style="font-size:13px">${pays}</div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
+      <div class="summary-line"><span>Valor final</span><strong>${money(s.finalValue)}</strong></div>
+      <div class="summary-line"><span>Recebido</span><strong>${money(received)}</strong></div>
+      <div class="summary-line"><span>Status</span><strong>${saleStatus(s)}</strong></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:12px">Observações</div>
+      <div style="font-size:13px;margin-top:4px">${escapeHtml(s.notes||"Sem observações")}</div>`;
+    $("viewModal").classList.add("show");
   }
 
-  window.toggleAccessory = function(id){
-    const a=APP.quickAccessories.find(x=>x.id===id);
-    if(!a)return;
-    const idx=APP.selectedAccessories.findIndex(x=>x.name===a.name);
-    if(idx>=0) APP.selectedAccessories.splice(idx,1);
-    else APP.selectedAccessories.push({id:uid(),name:a.name,value:0});
+  function closeViewModal(){ $("viewModal").classList.remove("show"); }
+
+  function sendWhatsApp(id){
+    const s=sales.find(x=>x.id===id); if(!s) return;
+    const acc=(s.accessories||[]).map(a=>`• ${a.name}${num(a.price)>0?" - "+money(a.price):""}`).join("\n");
+    const pays=(s.payments||[]).map(p=>`• ${p.method}: ${money(p.amount)}`).join("\n");
+
+    const msg =
+`Olá, ${s.client}! 👋
+
+Segue o resumo da sua compra na *Ampertech*:
+
+📱 *Aparelho:* ${s.device}
+📅 *Data:* ${formatDate(s.date)}
+💰 *Valor:* ${money(s.finalValue)}
+✅ *Status:* ${saleStatus(s)}
+${pays ? `\n💳 *Pagamento:*\n${pays}` : ""}
+${acc ? `\n🎁 *Acessórios:*\n${acc}` : ""}
+${s.notes ? `\n📝 *Observação:* ${s.notes}` : ""}
+
+Obrigado pela preferência!`;
+
+    let phone=(s.phone||"").replace(/\D/g,"");
+    if(phone && !phone.startsWith("55")) phone="55"+phone;
+
+    const url=phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+    window.open(url,"_blank","noopener");
+  }
+
+  function renderQuickAccessories(){
+    const wrap=$("quickAccessories");
+    if(!wrap) return;
+    wrap.innerHTML=accessories.map(a=>{
+      const selected=selectedAccessories.some(x=>x.sourceId===a.id);
+      return `<button type="button" class="chip ${selected?"selected":""}" onclick="toggleAccessory('${a.id}')">＋ ${escapeHtml(a.name)}</button>`;
+    }).join("");
+  }
+
+  function toggleAccessory(id){
+    const a=accessories.find(x=>x.id===id); if(!a) return;
+    const i=selectedAccessories.findIndex(x=>x.sourceId===id);
+    if(i>=0) selectedAccessories.splice(i,1);
+    else selectedAccessories.push({id:uid(),sourceId:a.id,name:a.name,price:num(a.price)});
     renderQuickAccessories();
     renderSelectedAccessories();
     updateSummary();
   }
 
-  window.addManualAccessory = function(){
-    const input=document.getElementById("manualAccessory");
+  function addManualAccessory(){
+    const input=$("manualAccessory");
     const name=input.value.trim();
-    if(!name)return;
-    APP.selectedAccessories.push({id:uid(),name,value:0});
+    if(!name) return;
+    selectedAccessories.push({id:uid(),sourceId:null,name,price:0});
     input.value="";
     renderSelectedAccessories();
     updateSummary();
   }
 
-  window.renderSelectedAccessories = function(){
-    const root=document.getElementById("selectedAccessories");
-    root.innerHTML=APP.selectedAccessories.map(a=>`
-      <div class="selected-accessory">
-        <input class="input" value="${esc(a.name)}" oninput="updateAccessoryName('${a.id}',this.value)" />
-        <input class="input" inputmode="decimal" placeholder="Valor cobrado" value="${a.value?String(a.value).replace(".",","):""}" oninput="updateAccessoryValue('${a.id}',this.value)" />
-        <button class="icon-btn" style="color:#ef4444" onclick="removeAccessory('${a.id}')"><i data-lucide="x" size="17"></i></button>
+  function renderSelectedAccessories(){
+    const wrap=$("selectedAccessories");
+    if(!selectedAccessories.length){ wrap.innerHTML=""; return; }
+    wrap.innerHTML=selectedAccessories.map((a,i)=>`
+      <div class="payment-line">
+        <input class="input" value="${escapeHtml(a.name)}" onchange="selectedAccessories[${i}].name=this.value">
+        <input class="input" inputmode="decimal" value="${num(a.price).toFixed(2).replace(".",",")}" onchange="selectedAccessories[${i}].price=num(this.value);updateSummary()">
+        <button type="button" class="secondary-btn delete" onclick="removeSelectedAccessory(${i})">✕</button>
       </div>`).join("");
-    refreshIcons();
   }
 
-  window.updateAccessoryName=function(id,v){
-    const a=APP.selectedAccessories.find(x=>x.id===id); if(a)a.name=v;
-  }
-  window.updateAccessoryValue=function(id,v){
-    const a=APP.selectedAccessories.find(x=>x.id===id); if(a)a.value=nval(v); updateSummary();
-  }
-  window.removeAccessory=function(id){
-    APP.selectedAccessories=APP.selectedAccessories.filter(x=>x.id!==id);
-    renderQuickAccessories(); renderSelectedAccessories(); updateSummary();
-  }
-
-  window.addPayment=function(){
-    APP.payments.push({id:uid(),value:0,method:"",destination:"",note:""});
-    renderPayments();
-  }
-
-  window.renderPayments=function(){
-    const root=document.getElementById("payments");
-    root.innerHTML=APP.payments.map((p,i)=>`
-      <div class="payment-card">
-        <div class="payment-title"><span>Pagamento ${i+1}</span><button class="icon-btn" onclick="removePayment('${p.id}')"><i data-lucide="x" size="17"></i></button></div>
-        <div class="payment-grid">
-          <div><label class="label">Valor</label><input class="input" inputmode="decimal" value="${p.value?String(p.value).replace(".",","):""}" oninput="setPayment('${p.id}','value',this.value)"></div>
-          <div><label class="label">Forma</label><select class="select" onchange="setPayment('${p.id}','method',this.value)">
-            <option value="">Selecione</option>
-            ${PAYMENT_METHODS.map(x=>`<option ${x===p.method?"selected":""}>${x}</option>`).join("")}
-          </select></div>
-        </div>
-        <div style="margin-top:8px"><label class="label">Onde caiu</label><select class="select" onchange="setPayment('${p.id}','destination',this.value)">
-          <option value="">Selecione</option>
-          ${PAYMENT_DESTINATIONS.map(x=>`<option ${x===p.destination?"selected":""}>${x}</option>`).join("")}
-        </select></div>
-        <input class="input" placeholder="Observação..." value="${esc(p.note||"")}" style="margin-top:8px" oninput="setPayment('${p.id}','note',this.value)" />
-      </div>`).join("");
-    refreshIcons();
-  }
-
-  window.setPayment=function(id,field,value){
-    const p=APP.payments.find(x=>x.id===id); if(!p)return;
-    p[field]=field==="value"?nval(value):value;
+  function removeSelectedAccessory(i){
+    selectedAccessories.splice(i,1);
+    renderQuickAccessories();
+    renderSelectedAccessories();
     updateSummary();
   }
 
-  window.removePayment=function(id){
-    APP.payments=APP.payments.filter(x=>x.id!==id);
-    renderPayments(); updateSummary();
+  function addPayment(){
+    paymentRows.push({method:"Pix",amount:0});
+    renderPayments();
   }
 
-  window.updateSummary=function(){
-    if(!window.APP)return;
-    const accessories=APP.selectedAccessories.reduce((s,a)=>s+nval(a.value),0);
-    const final=nval(document.getElementById("finalValue")?.value);
-    const received=APP.payments.reduce((s,p)=>s+nval(p.value),0);
-    const pending=Math.max(0,final-received);
-    const cancelled=document.getElementById("forceCancel")?.checked;
-    const status=cancelled?"Cancelado":(final>0 && received>=final?"Pago":"Pendente");
-    document.getElementById("sumAccessories").textContent=brl(accessories);
-    document.getElementById("sumFinal").textContent=brl(final);
-    document.getElementById("sumReceived").textContent=brl(received);
-    document.getElementById("sumPending").textContent=brl(pending);
-    document.getElementById("sumStatus").textContent=status;
+  function renderPayments(){
+    const wrap=$("payments");
+    if(!paymentRows.length){ wrap.innerHTML=""; return; }
+
+    wrap.innerHTML=paymentRows.map((p,i)=>`
+      <div class="payment-line">
+        <select class="select pay-method" data-i="${i}" onchange="paymentRows[${i}].method=this.value">
+          ${["Pix","Dinheiro","Cartão débito","Cartão crédito","Transferência","Outro"].map(m=>`<option ${p.method===m?"selected":""}>${m}</option>`).join("")}
+        </select>
+        <input class="input pay-amount" data-i="${i}" inputmode="decimal"
+          value="${num(p.amount)?num(p.amount).toFixed(2).replace(".",","):""}" placeholder="0,00"
+          oninput="paymentRows[${i}].amount=num(this.value);updateSummary()">
+        <button type="button" class="secondary-btn delete" onclick="removePayment(${i})">✕</button>
+      </div>`).join("");
   }
 
-  async function persistSale(sale){
-    if(APP.useFirebase){
-      const {collection,addDoc,doc,setDoc,serverTimestamp} = APP.firebaseFns;
-      const data={...sale};
-      delete data.id;
-      data.updatedAt=Date.now();
-      if(sale.id){
-        await setDoc(doc(APP.db,"vendas",sale.id),data,{merge:true});
-        return sale.id;
-      }else{
-        data.createdAt=Date.now();
-        const ref=await addDoc(collection(APP.db,"vendas"),data);
-        return ref.id;
-      }
-    }else{
-      if(sale.id){
-        const idx=APP.sales.findIndex(x=>x.id===sale.id);
-        if(idx>=0) APP.sales[idx]={...sale,updatedAt:Date.now()};
-      }else{
-        sale.id=uid(); sale.createdAt=Date.now();
-        APP.sales.unshift(sale);
-      }
-      await localSet("ampertech_sales",APP.sales);
-      return sale.id;
-    }
+  function removePayment(i){
+    paymentRows.splice(i,1);
+    renderPayments();
+    updateSummary();
   }
 
-  window.saveSale=async function(){
-    const clientName=document.getElementById("clientName").value.trim();
-    const seller=document.getElementById("seller").value;
-    const deviceDescription=document.getElementById("deviceDescription").value.trim();
-    const finalValue=nval(document.getElementById("finalValue").value);
-
-    if(!clientName){toast("Informe o nome do cliente");return}
-    if(!seller){toast("Selecione o vendedor");return}
-    if(!deviceDescription){toast("Informe a descrição do celular");return}
-    if(finalValue<=0){toast("Informe o valor final da venda");return}
-
-    const totalReceived=APP.payments.reduce((s,p)=>s+nval(p.value),0);
-    const forceCancel=document.getElementById("forceCancel").checked;
-    const status=forceCancel?"Cancelado":(totalReceived>=finalValue?"Pago":"Pendente");
-
-    const sale={
-      id:document.getElementById("saleId").value || undefined,
-      clientName,
-      clientPhone:document.getElementById("clientPhone").value.trim(),
-      seller,
-      saleDate:document.getElementById("saleDate").value || todayISO(),
-      deviceDescription,
-      imei:document.getElementById("imei").value.trim(),
-      finalValue,
-      accessories:JSON.parse(JSON.stringify(APP.selectedAccessories)),
-      payments:JSON.parse(JSON.stringify(APP.payments)),
-      postedDelivery:document.getElementById("postedDelivery").checked,
-      postedSold:document.getElementById("postedSold").checked,
-      postedGroup:document.getElementById("postedGroup").checked,
-      forceCancel,
-      notes:document.getElementById("notes").value.trim(),
-      status,
-      totalReceived,
-      pendingBalance:Math.max(0,finalValue-totalReceived)
-    };
-
-    try{
-      await persistSale(sale);
-      toast(sale.id?"Venda atualizada":"Venda cadastrada");
-      await loadAll();
-      showPage("sales");
-    }catch(err){
-      console.error(err);
-      toast("Erro ao salvar venda");
-    }
+  function collectPayments(){
+    return paymentRows.map((p,i)=>({
+      method:document.querySelector(`.pay-method[data-i="${i}"]`)?.value || p.method,
+      amount:num(document.querySelector(`.pay-amount[data-i="${i}"]`)?.value || p.amount)
+    })).filter(p=>p.amount>0 || p.method);
   }
 
-  window.editSale=function(id){
-    const s=APP.sales.find(x=>x.id===id); if(!s)return;
-    document.getElementById("saleId").value=s.id;
-    document.getElementById("saleFormTitle").textContent="Editar Venda";
-    document.getElementById("saveSaleText").textContent="Salvar Alterações";
-    document.getElementById("clientName").value=s.clientName||"";
-    document.getElementById("clientPhone").value=s.clientPhone||"";
-    document.getElementById("seller").value=s.seller||"";
-    document.getElementById("saleDate").value=s.saleDate||todayISO();
-    document.getElementById("deviceDescription").value=s.deviceDescription||"";
-    document.getElementById("imei").value=s.imei||"";
-    document.getElementById("finalValue").value=s.finalValue?String(s.finalValue).replace(".",","):"";
-    document.getElementById("postedDelivery").checked=!!s.postedDelivery;
-    document.getElementById("postedSold").checked=!!s.postedSold;
-    document.getElementById("postedGroup").checked=!!s.postedGroup;
-    document.getElementById("forceCancel").checked=!!s.forceCancel;
-    document.getElementById("notes").value=s.notes||"";
-    APP.selectedAccessories=(s.accessories||[]).map(a=>({...a,id:a.id||uid()}));
-    APP.payments=(s.payments||[]).map(p=>({...p,id:p.id||uid()}));
-    renderQuickAccessories(); renderSelectedAccessories(); renderPayments(); updateSummary();
-    showPage("new");
+  function updateSummary(){
+    const final=num($("finalValue")?.value);
+    const acc=selectedAccessories.reduce((t,a)=>t+num(a.price),0);
+    const received=paymentRows.reduce((t,p)=>t+num(p.amount),0);
+    const pending=Math.max(final-received,0);
+
+    $("sumAccessories").textContent=money(acc);
+    $("sumFinal").textContent=money(final);
+    $("sumReceived").textContent=money(received);
+    $("sumNet").textContent=money(received);
+    $("sumPending").textContent=money(pending);
+    $("sumStatus").textContent=$("cancelled")?.checked ? "Cancelado" : (final>0 && pending<0.01 ? "Pago" : "Pendente");
   }
 
-  window.deleteSale=async function(id){
-    const s=APP.sales.find(x=>x.id===id);
-    if(!confirm(`Excluir a venda de ${s?.clientName||"este cliente"}?`))return;
+  $("cancelled").addEventListener("change",updateSummary);
 
-    try{
-      if(APP.useFirebase){
-        const {doc,deleteDoc}=APP.firebaseFns;
-        await deleteDoc(doc(APP.db,"vendas",id));
-      }else{
-        APP.sales=APP.sales.filter(x=>x.id!==id);
-        await localSet("ampertech_sales",APP.sales);
-      }
-      toast("Venda excluída");
-      await loadAll();
-    }catch(err){console.error(err);toast("Erro ao excluir")}
-  }
+  function renderAccessories(){
+    const wrap=$("accessoryList");
+    if(!wrap) return;
 
-
-  function buildSaleWhatsAppMessage(s){
-    // Agrupa acessórios iguais para gerar "2x Capa Normal", por exemplo.
-    const accessoryCount = {};
-    (s.accessories || []).forEach(a=>{
-      const name = String(a.name || "").trim();
-      if(name) accessoryCount[name] = (accessoryCount[name] || 0) + 1;
-    });
-
-    const accessoryLines = Object.entries(accessoryCount).length
-      ? Object.entries(accessoryCount).map(([name,qty])=>`• ${qty}x ${name}`)
-      : ["• Nenhum item incluso"];
-
-    const paymentLines = (s.payments || []).length
-      ? (s.payments || []).map(p=>{
-          const method = p.method || "Forma não informada";
-          const destination = p.destination ? ` → ${p.destination}` : "";
-          const note = p.note ? ` (${p.note})` : "";
-          return `• ${brl(p.value)} - ${method}${destination}${note}`;
-        })
-      : ["• Nenhum pagamento informado"];
-
-    return [
-      `*Vendedor:* ${s.seller || "-"}`,
-      `*Aparelho:* ${s.deviceDescription || "-"}`,
-      "",
-      "*Itens inclusos:*",
-      ...accessoryLines,
-      "",
-      `*Valor final:* ${brl(s.finalValue)}`,
-      "",
-      "*Pagamento:*",
-      ...paymentLines
-    ].join("\n");
-  }
-
-  window.sendSaleWhatsApp=function(id){
-    const s = APP.sales.find(x=>x.id===id);
-    if(!s){
-      toast("Venda não encontrada");
+    if(!accessories.length){
+      wrap.innerHTML='<div class="card empty">Nenhum acessório cadastrado.</div>';
       return;
     }
 
-    const text = buildSaleWhatsAppMessage(s);
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-
-  window.viewSale=function(id){
-    const s=APP.sales.find(x=>x.id===id); if(!s)return;
-    const acc=(s.accessories||[]).length ? (s.accessories||[]).map(a=>`<li>${esc(a.name)}${a.value?` - ${brl(a.value)}`:""}</li>`).join("") : "<li>Nenhum</li>";
-    const pays=(s.payments||[]).length ? (s.payments||[]).map(p=>`<li>${brl(p.value)} - ${esc(p.method||"-")} - ${esc(p.destination||"-")}${p.note?` (${esc(p.note)})`:""}</li>`).join("") : "<li>Nenhum</li>";
-    document.getElementById("modalRoot").innerHTML=`
-      <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
-        <div class="modal">
-          <div class="modal-head">
-            <div class="modal-title">${esc(s.deviceDescription)}</div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <button class="whatsapp-share-btn" onclick="sendSaleWhatsApp('${s.id}')"><i data-lucide="message-circle" size="16"></i> WhatsApp</button>
-              <button class="icon-btn" onclick="closeModal()"><i data-lucide="x"></i></button>
-            </div>
+    wrap.innerHTML=accessories.map(a=>`
+      <div class="list-item">
+        <div class="list-item-left">
+          <div class="cube">◇</div>
+          <div>
+            <div class="list-item-title">${escapeHtml(a.name)}</div>
+            <div class="list-item-meta">${money(a.price)} ${a.category?`<span class="mini-tag">${escapeHtml(a.category)}</span>`:""}</div>
           </div>
-          <div class="grid2">
-            <div><div class="label">Cliente</div><strong>${esc(s.clientName)}</strong></div>
-            <div><div class="label">Vendedor</div><strong>${esc(s.seller)}</strong></div>
-            <div><div class="label">Data</div><strong>${fmtDate(s.saleDate)}</strong></div>
-            <div><div class="label">Valor</div><strong>${brl(s.finalValue)}</strong></div>
-            <div><div class="label">Telefone</div><strong>${esc(s.clientPhone||"-")}</strong></div>
-            <div><div class="label">IMEI / Série</div><strong>${esc(s.imei||"-")}</strong></div>
-          </div>
-          <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
-          <div class="label">Acessórios</div><ul>${acc}</ul>
-          <div class="label">Pagamentos</div><ul>${pays}</ul>
-          <div class="label">Observações</div><div>${esc(s.notes||"-")}</div>
         </div>
-      </div>`;
-    refreshIcons();
-  }
-
-  window.closeModal=function(){document.getElementById("modalRoot").innerHTML=""}
-
-  window.createQuickAccessory=async function(){
-    const name=document.getElementById("newAccessoryName").value.trim();
-    if(!name)return;
-    const item={id:uid(),name};
-    try{
-      if(APP.useFirebase){
-        const {collection,addDoc}=APP.firebaseFns;
-        const ref=await addDoc(collection(APP.db,"acessoriosRapidos"),{name,createdAt:Date.now()});
-        item.id=ref.id;
-      }else{
-        APP.quickAccessories.push(item);
-        await localSet("ampertech_accessories",APP.quickAccessories);
-      }
-      document.getElementById("newAccessoryName").value="";
-      await loadAll();
-      toast("Acessório adicionado");
-    }catch(err){console.error(err);toast("Erro ao adicionar")}
-  }
-
-  window.removeQuickAccessory=async function(id){
-    if(!confirm("Excluir este acessório rápido?"))return;
-    try{
-      if(APP.useFirebase){
-        const {doc,deleteDoc}=APP.firebaseFns;
-        await deleteDoc(doc(APP.db,"acessoriosRapidos",id));
-      }else{
-        APP.quickAccessories=APP.quickAccessories.filter(x=>x.id!==id);
-        await localSet("ampertech_accessories",APP.quickAccessories);
-      }
-      await loadAll();
-    }catch(err){console.error(err);toast("Erro ao excluir")}
-  }
-
-  window.renderAccessoriesManagement=function(){
-    if(!window.APP)return;
-    const root=document.getElementById("accessoriesManagement");
-    if(!root)return;
-    root.innerHTML=APP.quickAccessories.map(a=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:9px 2px">
-        <span>${esc(a.name)}</span>
-        <button class="icon-btn" style="color:#ef4444" onclick="removeQuickAccessory('${a.id}')"><i data-lucide="trash-2" size="16"></i></button>
+        <div class="actions">
+          <button class="icon-btn" onclick="openAccessoryModal('${a.id}')">✎</button>
+          <button class="icon-btn delete" onclick="deleteAccessory('${a.id}')">♲</button>
+        </div>
       </div>`).join("");
-    refreshIcons();
   }
 
-  window.renderReports=function(){
-    if(!window.APP)return;
-    const active=APP.sales.filter(s=>s.status!=="Cancelado");
-    const today=todayISO();
-    const month=today.slice(0,7);
-    const todaySales=active.filter(s=>s.saleDate===today);
-    const monthSales=active.filter(s=>(s.saleDate||"").startsWith(month));
-    const totalMonth=monthSales.reduce((s,x)=>s+nval(x.finalValue),0);
-    const pending=active.reduce((s,x)=>s+nval(x.pendingBalance),0);
+  function openAccessoryModal(id){
+    editingAccessoryId=id||null;
+    const a=accessories.find(x=>x.id===id);
+    $("accessoryModalTitle").textContent=a?"Editar acessório":"Novo acessório";
+    $("accName").value=a?.name||"";
+    $("accPrice").value=a?num(a.price).toFixed(2).replace(".",","):"";
+    $("accCategory").value=a?.category||"";
+    $("accessoryModal").classList.add("show");
+  }
 
-    document.getElementById("reportStats").innerHTML=`
-      <div class="stat"><div class="stat-label">Vendas hoje</div><div class="stat-value">${todaySales.length}</div></div>
-      <div class="stat"><div class="stat-label">Vendas no mês</div><div class="stat-value">${monthSales.length}</div></div>
-      <div class="stat"><div class="stat-label">Faturamento no mês</div><div class="stat-value">${brl(totalMonth)}</div></div>
-      <div class="stat"><div class="stat-label">Saldo pendente</div><div class="stat-value">${brl(pending)}</div></div>`;
+  function closeAccessoryModal(){ $("accessoryModal").classList.remove("show"); }
 
-    const sellerMap={};
-    active.forEach(s=>{
-      const k=s.seller||"Sem vendedor";
-      sellerMap[k]??={count:0,total:0};
-      sellerMap[k].count++;
-      sellerMap[k].total+=nval(s.finalValue);
+  async function saveAccessory(){
+    const name=$("accName").value.trim();
+    if(!name){toast("Informe o nome do acessório.");return;}
+
+    const btn=$("saveAccessoryButton");
+    btn.disabled=true;
+    btn.textContent="Salvando...";
+
+    const id=editingAccessoryId||uid();
+    const old=accessories.find(x=>x.id===editingAccessoryId);
+
+    const item={
+      name,
+      price:num($("accPrice").value),
+      category:$("accCategory").value.trim(),
+      createdAt:old?.createdAt || serverTimestamp(),
+      createdAtMs:old?.createdAtMs || Date.now(),
+      updatedAt:serverTimestamp(),
+      updatedAtMs:Date.now(),
+      createdBy:old?.createdBy || currentUser?.uid || null,
+      updatedBy:currentUser?.uid || null
+    };
+
+    try{
+      await setDoc(doc(db,"acessorios",id),item,{merge:true});
+      closeAccessoryModal();
+      toast("Acessório salvo.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }finally{
+      btn.disabled=false;
+      btn.textContent="Salvar";
+    }
+  }
+
+  async function deleteAccessory(id){
+    const a=accessories.find(x=>x.id===id); if(!a) return;
+    if(!confirm(`Excluir "${a.name}"?`)) return;
+
+    try{
+      await deleteDoc(doc(db,"acessorios",id));
+      toast("Acessório excluído.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  function renderReports(){
+    const valid=sales.filter(s=>!s.cancelled);
+    const total=valid.reduce((t,s)=>t+num(s.finalValue),0);
+    const received=valid.reduce((t,s)=>t+(s.payments||[]).reduce((x,p)=>x+num(p.amount),0),0);
+
+    if($("reportMetrics")){
+      $("reportMetrics").innerHTML=`
+        <div class="metric"><div class="k">Vendas</div><div class="v">${valid.length}</div></div>
+        <div class="metric"><div class="k">Valor vendido</div><div class="v">${money(total)}</div></div>
+        <div class="metric"><div class="k">Recebido</div><div class="v">${money(received)}</div></div>`;
+    }
+
+    const map={};
+    valid.forEach(s=>{
+      const k=s.seller||"Não informado";
+      map[k] ||= {count:0,total:0,received:0};
+      map[k].count++;
+      map[k].total+=num(s.finalValue);
+      map[k].received+=(s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
     });
-    document.getElementById("sellerReport").innerHTML=reportTable(
-      ["Vendedor","Vendas","Total"],
-      Object.entries(sellerMap).map(([k,v])=>[k,v.count,brl(v.total)])
-    );
 
-    const payMap={};
-    active.forEach(s=>(s.payments||[]).forEach(p=>{
-      const k=p.method||"Não informado";
-      payMap[k]=(payMap[k]||0)+nval(p.value);
-    }));
-    document.getElementById("paymentReport").innerHTML=reportTable(
-      ["Forma","Total recebido"],
-      Object.entries(payMap).map(([k,v])=>[k,brl(v)])
-    );
+    const rows=Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+    if($("sellerReport")){
+      $("sellerReport").innerHTML=rows.length
+        ? rows.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${v.count}</td><td>${money(v.total)}</td><td>${money(v.received)}</td></tr>`).join("")
+        : `<tr><td colspan="4" class="muted">Sem dados.</td></tr>`;
+    }
   }
 
-  function reportTable(headers,rows){
-    if(!rows.length)return `<div class="empty">Sem dados ainda.</div>`;
-    return `<table class="report-table"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-  }
+  // Expor funções usadas pelos onclicks do HTML.
+  Object.assign(window,{
+    navigate,togglePaidFilter,openNewSale,editSale,deleteSale,viewSale,closeViewModal,
+    sendWhatsApp,toggleAccessory,addManualAccessory,removeSelectedAccessory,
+    addPayment,removePayment,updateSummary,openAccessoryModal,closeAccessoryModal,
+    saveAccessory,deleteAccessory,renderSales,renderAccessories,renderReports,
+    num,selectedAccessories,paymentRows
+  });
 
-  // Inicialização visual
-  document.getElementById("saleDate").value=todayISO();
-  document.getElementById("finalValue").addEventListener("input",updateSummary);
-  refreshIcons();
+  $("date").value=todayISO();
+  renderSales();
+  renderAccessories();
+  renderReports();
 </script>
 </body>
 </html>
