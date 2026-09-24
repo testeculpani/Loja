@@ -122,12 +122,18 @@
       display:flex;align-items:center;justify-content:space-between;gap:10px;
       border-top:1px solid var(--line);margin-top:12px;padding-top:11px
     }
-    .checks{display:flex;gap:13px;flex-wrap:wrap;font-size:12px;color:#5f6b7c}
-    .check.ok::before{
-      content:"✓";display:inline-grid;place-items:center;width:12px;height:12px;background:#12c96d;
-      color:#fff;border-radius:2px;margin-right:5px;font-size:10px;font-weight:900
+    .checks{display:flex;gap:7px;flex-wrap:wrap;font-size:12px;color:#5f6b7c}
+    .check-inline{
+      border:1px solid var(--line);background:#fff;color:#5f6b7c;border-radius:8px;
+      padding:6px 9px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+      transition:.15s
     }
-    .check.no::before{content:"✕";margin-right:5px;color:#ff4d67;font-weight:900}
+    .check-inline:hover{border-color:#9db0f8;background:#f8faff}
+    .check-inline.ok{background:#ecfdf3;border-color:#abefc6;color:#067647}
+    .check-inline.no{background:#fff;border-color:#e4e7ec;color:#667085}
+    .check-inline.ok::before{content:"✓";font-weight:900}
+    .check-inline.no::before{content:"✕";color:#f04438;font-weight:900}
+    .seller-add{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:14px}
     .actions{display:flex;align-items:center;gap:4px}
     .whatsapp{color:#07ad65!important;font-size:18px}
     .delete{color:var(--danger)!important}
@@ -191,13 +197,6 @@
       box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;display:none;z-index:100
     }
     .toast.show{display:block}
-    .report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
-    .metric{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
-    .metric .k{font-size:12px;color:var(--muted)}
-    .metric .v{font-size:22px;font-weight:800;margin-top:4px}
-    .table{width:100%;border-collapse:collapse;font-size:12px}
-    .table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left}
-    .table th{color:#667085}
 
     .login-screen{
       position:fixed;inset:0;background:linear-gradient(135deg,#f7f9ff,#eef2ff);
@@ -242,7 +241,6 @@
       .sale-price{text-align:left}
       .sale-bottom{align-items:flex-start;flex-direction:column}
       .actions{width:100%;justify-content:flex-end}
-      .report-grid{grid-template-columns:1fr}
       .page-head{align-items:flex-start}
       .page-head .primary-btn span.label{display:none}
       .sync span{display:none}
@@ -295,7 +293,7 @@
       <button class="nav-btn active" data-view="sales" onclick="navigate('sales')"><span>▣</span>Vendas</button>
       <button class="nav-btn" data-view="new" onclick="openNewSale()"><span>＋</span>Nova Venda</button>
       <button class="nav-btn" data-view="accessories" onclick="navigate('accessories')"><span>◇</span>Acessórios</button>
-      <button class="nav-btn" data-view="reports" onclick="navigate('reports')"><span>⌁</span>Relatórios</button>
+      <button class="nav-btn" data-view="sellers" onclick="navigate('sellers')"><span>♙</span>Vendedores</button>
     </aside>
 
     <main class="main">
@@ -330,12 +328,7 @@
                 <div class="field"><input id="phone" class="input" placeholder="Telefone"></div>
                 <div class="field">
                   <select id="seller" class="select" required>
-                    <option value="">Vendedor *</option>
-                    <option>Dither</option>
-                    <option>Vinícius</option>
-                    <option>Vanderson</option>
-                    <option>Giovani</option>
-                    <option>Outro</option>
+                    <option value="">Carregando vendedores...</option>
                   </select>
                 </div>
               </div>
@@ -409,19 +402,20 @@
         </div>
       </section>
 
-      <section id="view-reports" class="view" hidden>
-        <div class="content wide">
-          <div class="page-head"><h1>Relatórios</h1></div>
-          <div id="reportMetrics" class="report-grid"></div>
-          <div class="card">
-            <h2 class="section-title">Resumo por vendedor</h2>
-            <div style="overflow:auto">
-              <table class="table">
-                <thead><tr><th>Vendedor</th><th>Vendas</th><th>Valor vendido</th><th>Recebido</th></tr></thead>
-                <tbody id="sellerReport"></tbody>
-              </table>
-            </div>
+      <section id="view-sellers" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <h1>Vendedores</h1>
           </div>
+          <div class="card">
+            <h2 class="section-title">Adicionar vendedor</h2>
+            <div class="seller-add">
+              <input id="newSellerName" class="input" placeholder="Nome do vendedor" onkeydown="if(event.key==='Enter'){event.preventDefault();addSeller()}">
+              <button class="primary-btn" type="button" onclick="addSeller()">＋ Adicionar</button>
+            </div>
+            <div class="muted" style="font-size:12px">Os vendedores cadastrados aqui aparecem automaticamente na Nova Venda.</div>
+          </div>
+          <div id="sellerList"></div>
         </div>
       </section>
     </main>
@@ -492,8 +486,17 @@
     {id:"pelicula",name:"Película",price:0,category:"Proteção"}
   ];
 
+  const defaultSellers = [
+    {id:"dither",name:"Dither"},
+    {id:"vinicius",name:"Vinícius"},
+    {id:"vanderson",name:"Vanderson"},
+    {id:"giovani",name:"Giovani"},
+    {id:"outro",name:"Outro"}
+  ];
+
   let sales = [];
   let accessories = [];
+  let sellers = [];
   let editingSaleId = null;
   let editingAccessoryId = null;
   let selectedAccessories = [];
@@ -501,6 +504,7 @@
   let paidOnly = false;
   let stopSalesListener = null;
   let stopAccessoriesListener = null;
+  let stopSellersListener = null;
   let currentUser = null;
 
   const $ = id => document.getElementById(id);
@@ -571,9 +575,25 @@
     await batch.commit();
   }
 
+  async function seedSellersIfNeeded(){
+    const snap = await getDocs(collection(db,"vendedores"));
+    if(!snap.empty) return;
+    const batch = writeBatch(db);
+    defaultSellers.forEach(s=>{
+      batch.set(doc(db,"vendedores",s.id),{
+        name:s.name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+    });
+    await batch.commit();
+  }
+
   function startRealtime(){
     if(stopSalesListener) stopSalesListener();
     if(stopAccessoriesListener) stopAccessoriesListener();
+    if(stopSellersListener) stopSellersListener();
 
     setSync("", "Sincronizando");
 
@@ -582,7 +602,6 @@
       snap=>{
         sales = snap.docs.map(d=>({id:d.id,...d.data()}));
         renderSales();
-        renderReports();
         setSync("ok","Sincronizado");
       },
       err=>{
@@ -599,6 +618,22 @@
           .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
         renderAccessories();
         renderQuickAccessories();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
+
+    stopSellersListener = onSnapshot(
+      collection(db,"vendedores"),
+      snap=>{
+        sellers = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+        renderSellerOptions();
+        renderSellers();
         setSync("ok","Sincronizado");
       },
       err=>{
@@ -645,6 +680,7 @@
       $("loginScreen").hidden = false;
       if(stopSalesListener){ stopSalesListener(); stopSalesListener=null; }
       if(stopAccessoriesListener){ stopAccessoriesListener(); stopAccessoriesListener=null; }
+      if(stopSellersListener){ stopSellersListener(); stopSellersListener=null; }
       return;
     }
 
@@ -655,6 +691,7 @@
 
     try{
       await seedAccessoriesIfNeeded();
+      await seedSellersIfNeeded();
       startRealtime();
     }catch(error){
       console.error(error);
@@ -669,7 +706,7 @@
     document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
     if(view==="sales") renderSales();
     if(view==="accessories") renderAccessories();
-    if(view==="reports") renderReports();
+    if(view==="sellers") renderSellers();
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
@@ -722,9 +759,9 @@
         </div>
         <div class="sale-bottom">
           <div class="checks">
-            <span class="check ${s.delivery?"ok":"no"}">Entrega</span>
-            <span class="check ${s.soldPost?"ok":"no"}">Vendido</span>
-            <span class="check ${s.groupPost?"ok":"no"}">GrupoVenda</span>
+            <button class="check-inline ${s.delivery?"ok":"no"}" type="button" title="Alterar Postado saindo para entrega" onclick="toggleSaleCheck('${s.id}','delivery')">Entrega</button>
+            <button class="check-inline ${s.soldPost?"ok":"no"}" type="button" title="Alterar Postado/marcado vendido" onclick="toggleSaleCheck('${s.id}','soldPost')">Postado/Marcado</button>
+            <button class="check-inline ${s.groupPost?"ok":"no"}" type="button" title="Alterar Postado no GrupoVenda" onclick="toggleSaleCheck('${s.id}','groupPost')">GrupoVenda</button>
           </div>
           <div class="actions">
             <span class="pay-label">${escapeHtml(p)}</span>
@@ -742,10 +779,13 @@
     editingSaleId=null;
     selectedAccessories=[];
     paymentRows=[];
+    window.selectedAccessories=selectedAccessories;
+    window.paymentRows=paymentRows;
     $("saleForm").reset();
     $("date").value=todayISO();
     $("saleFormTitle").textContent="Nova Venda";
     $("saveSaleLabel").textContent="Cadastrar Venda";
+    renderSellerOptions();
     renderQuickAccessories();
     renderSelectedAccessories();
     renderPayments();
@@ -758,6 +798,7 @@
     editingSaleId=id;
     $("client").value=s.client||"";
     $("phone").value=s.phone||"";
+    renderSellerOptions(s.seller||"");
     $("seller").value=s.seller||"";
     $("date").value=s.date||todayISO();
     $("device").value=s.device||"";
@@ -770,6 +811,8 @@
     $("notes").value=s.notes||"";
     selectedAccessories=JSON.parse(JSON.stringify(s.accessories||[]));
     paymentRows=JSON.parse(JSON.stringify(s.payments||[]));
+    window.selectedAccessories=selectedAccessories;
+    window.paymentRows=paymentRows;
     $("saleFormTitle").textContent="Editar Venda";
     $("saveSaleLabel").textContent="Salvar Alterações";
     renderQuickAccessories();
@@ -846,6 +889,34 @@
     }catch(error){
       console.error(error);
       toast(firebaseErrorMessage(error));
+    }
+  }
+
+  async function toggleSaleCheck(id, field){
+    const allowed = ["delivery","soldPost","groupPost"];
+    if(!allowed.includes(field)) return;
+    const s = sales.find(x=>x.id===id);
+    if(!s) return;
+
+    const next = !Boolean(s[field]);
+    s[field] = next;
+    renderSales();
+
+    try{
+      setSync("","Salvando");
+      await setDoc(doc(db,"vendas",id),{
+        [field]:next,
+        updatedAt:serverTimestamp(),
+        updatedAtMs:Date.now(),
+        updatedBy:currentUser?.uid || null,
+        updatedByEmail:currentUser?.email || ""
+      },{merge:true});
+    }catch(error){
+      s[field] = !next;
+      renderSales();
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+      setSync("err","Erro ao salvar");
     }
   }
 
@@ -1005,6 +1076,85 @@ Obrigado pela preferência!`;
 
   $("cancelled").addEventListener("change",updateSummary);
 
+
+  function renderSellerOptions(preferredValue){
+    const select = $("seller");
+    if(!select) return;
+
+    const current = preferredValue !== undefined ? preferredValue : select.value;
+    let list = sellers.slice();
+    if(current && !list.some(s=>String(s.name||"").toLowerCase()===String(current).toLowerCase())){
+      list.push({id:"legacy",name:current});
+    }
+
+    select.innerHTML = `<option value="">Vendedor *</option>` +
+      list.map(s=>`<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("");
+
+    if(current) select.value=current;
+  }
+
+  function renderSellers(){
+    const wrap = $("sellerList");
+    if(!wrap) return;
+
+    if(!sellers.length){
+      wrap.innerHTML = '<div class="card empty">Nenhum vendedor cadastrado.</div>';
+      return;
+    }
+
+    wrap.innerHTML = sellers.map(s=>`
+      <div class="list-item">
+        <div class="list-item-left">
+          <div class="cube">♙</div>
+          <div>
+            <div class="list-item-title">${escapeHtml(s.name)}</div>
+            <div class="list-item-meta">Disponível na Nova Venda</div>
+          </div>
+        </div>
+        <button class="icon-btn delete" title="Remover vendedor" onclick="deleteSeller('${s.id}')">♲</button>
+      </div>
+    `).join("");
+  }
+
+  async function addSeller(){
+    const input = $("newSellerName");
+    const name = input.value.trim();
+    if(!name){ toast("Informe o nome do vendedor."); return; }
+
+    if(sellers.some(s=>String(s.name||"").trim().toLowerCase()===name.toLowerCase())){
+      toast("Esse vendedor já está cadastrado.");
+      return;
+    }
+
+    try{
+      await setDoc(doc(db,"vendedores",uid()),{
+        name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+      input.value="";
+      toast("Vendedor adicionado.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  async function deleteSeller(id){
+    const seller = sellers.find(s=>s.id===id);
+    if(!seller) return;
+    if(!confirm(`Remover o vendedor "${seller.name}" da lista? As vendas antigas continuarão com o nome dele.`)) return;
+
+    try{
+      await deleteDoc(doc(db,"vendedores",id));
+      toast("Vendedor removido.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
   function renderAccessories(){
     const wrap=$("accessoryList");
     if(!wrap) return;
@@ -1091,48 +1241,21 @@ Obrigado pela preferência!`;
     }
   }
 
-  function renderReports(){
-    const valid=sales.filter(s=>!s.cancelled);
-    const total=valid.reduce((t,s)=>t+num(s.finalValue),0);
-    const received=valid.reduce((t,s)=>t+(s.payments||[]).reduce((x,p)=>x+num(p.amount),0),0);
-
-    if($("reportMetrics")){
-      $("reportMetrics").innerHTML=`
-        <div class="metric"><div class="k">Vendas</div><div class="v">${valid.length}</div></div>
-        <div class="metric"><div class="k">Valor vendido</div><div class="v">${money(total)}</div></div>
-        <div class="metric"><div class="k">Recebido</div><div class="v">${money(received)}</div></div>`;
-    }
-
-    const map={};
-    valid.forEach(s=>{
-      const k=s.seller||"Não informado";
-      map[k] ||= {count:0,total:0,received:0};
-      map[k].count++;
-      map[k].total+=num(s.finalValue);
-      map[k].received+=(s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
-    });
-
-    const rows=Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
-    if($("sellerReport")){
-      $("sellerReport").innerHTML=rows.length
-        ? rows.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${v.count}</td><td>${money(v.total)}</td><td>${money(v.received)}</td></tr>`).join("")
-        : `<tr><td colspan="4" class="muted">Sem dados.</td></tr>`;
-    }
-  }
-
   // Expor funções usadas pelos onclicks do HTML.
   Object.assign(window,{
-    navigate,togglePaidFilter,openNewSale,editSale,deleteSale,viewSale,closeViewModal,
+    navigate,togglePaidFilter,openNewSale,editSale,deleteSale,toggleSaleCheck,viewSale,closeViewModal,
     sendWhatsApp,toggleAccessory,addManualAccessory,removeSelectedAccessory,
     addPayment,removePayment,updateSummary,openAccessoryModal,closeAccessoryModal,
-    saveAccessory,deleteAccessory,renderSales,renderAccessories,renderReports,
+    saveAccessory,deleteAccessory,addSeller,deleteSeller,renderSellers,
+    renderSales,renderAccessories,renderSellerOptions,
     num,selectedAccessories,paymentRows
   });
 
   $("date").value=todayISO();
   renderSales();
   renderAccessories();
-  renderReports();
+  renderSellers();
+  renderSellerOptions();
 </script>
 </body>
 </html>
