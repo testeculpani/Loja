@@ -230,7 +230,7 @@
       .sidebar{
         position:fixed;left:0;right:0;bottom:0;top:auto;height:64px;z-index:40;
         border-right:0;border-top:1px solid var(--line);padding:6px;
-        display:grid;grid-template-columns:repeat(4,1fr)
+        display:grid;grid-template-columns:repeat(5,1fr)
       }
       .nav-btn{justify-content:center;padding:8px 4px;margin:0;gap:4px;flex-direction:column;font-size:10px}
       .main{padding:16px 12px 86px}
@@ -294,6 +294,7 @@
       <button class="nav-btn" data-view="new" onclick="openNewSale()"><span>＋</span>Nova Venda</button>
       <button class="nav-btn" data-view="accessories" onclick="navigate('accessories')"><span>◇</span>Acessórios</button>
       <button class="nav-btn" data-view="sellers" onclick="navigate('sellers')"><span>♙</span>Vendedores</button>
+      <button class="nav-btn" data-view="payment-methods" onclick="navigate('payment-methods')"><span>▤</span>Pagamentos</button>
     </aside>
 
     <main class="main">
@@ -418,6 +419,23 @@
           <div id="sellerList"></div>
         </div>
       </section>
+
+      <section id="view-payment-methods" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <h1>Formas de Pagamento</h1>
+          </div>
+          <div class="card">
+            <h2 class="section-title">Adicionar forma de pagamento</h2>
+            <div class="seller-add">
+              <input id="newPaymentMethodName" class="input" placeholder="Ex.: Pix, Dinheiro, Cartão 12x..." onkeydown="if(event.key==='Enter'){event.preventDefault();addPaymentMethod()}">
+              <button class="primary-btn" type="button" onclick="addPaymentMethod()">＋ Adicionar</button>
+            </div>
+            <div class="muted" style="font-size:12px">As formas cadastradas aqui aparecem automaticamente na Nova Venda. Excluir uma opção não altera vendas antigas.</div>
+          </div>
+          <div id="paymentMethodList"></div>
+        </div>
+      </section>
     </main>
   </div>
 </div>
@@ -494,9 +512,19 @@
     {id:"outro",name:"Outro"}
   ];
 
+  const defaultPaymentMethods = [
+    {id:"pix",name:"Pix"},
+    {id:"dinheiro",name:"Dinheiro"},
+    {id:"cartao-debito",name:"Cartão débito"},
+    {id:"cartao-credito",name:"Cartão crédito"},
+    {id:"transferencia",name:"Transferência"},
+    {id:"outro",name:"Outro"}
+  ];
+
   let sales = [];
   let accessories = [];
   let sellers = [];
+  let paymentMethods = [];
   let editingSaleId = null;
   let editingAccessoryId = null;
   let selectedAccessories = [];
@@ -505,6 +533,7 @@
   let stopSalesListener = null;
   let stopAccessoriesListener = null;
   let stopSellersListener = null;
+  let stopPaymentMethodsListener = null;
   let currentUser = null;
 
   const $ = id => document.getElementById(id);
@@ -590,10 +619,26 @@
     await batch.commit();
   }
 
+  async function seedPaymentMethodsIfNeeded(){
+    const snap = await getDocs(collection(db,"formas_pagamento"));
+    if(!snap.empty) return;
+    const batch = writeBatch(db);
+    defaultPaymentMethods.forEach(m=>{
+      batch.set(doc(db,"formas_pagamento",m.id),{
+        name:m.name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+    });
+    await batch.commit();
+  }
+
   function startRealtime(){
     if(stopSalesListener) stopSalesListener();
     if(stopAccessoriesListener) stopAccessoriesListener();
     if(stopSellersListener) stopSellersListener();
+    if(stopPaymentMethodsListener) stopPaymentMethodsListener();
 
     setSync("", "Sincronizando");
 
@@ -642,6 +687,22 @@
         toast(firebaseErrorMessage(err));
       }
     );
+
+    stopPaymentMethodsListener = onSnapshot(
+      collection(db,"formas_pagamento"),
+      snap=>{
+        paymentMethods = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+        renderPaymentMethods();
+        renderPayments();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
   }
 
   $("loginForm").addEventListener("submit", async e=>{
@@ -681,6 +742,7 @@
       if(stopSalesListener){ stopSalesListener(); stopSalesListener=null; }
       if(stopAccessoriesListener){ stopAccessoriesListener(); stopAccessoriesListener=null; }
       if(stopSellersListener){ stopSellersListener(); stopSellersListener=null; }
+      if(stopPaymentMethodsListener){ stopPaymentMethodsListener(); stopPaymentMethodsListener=null; }
       return;
     }
 
@@ -692,6 +754,7 @@
     try{
       await seedAccessoriesIfNeeded();
       await seedSellersIfNeeded();
+      await seedPaymentMethodsIfNeeded();
       startRealtime();
     }catch(error){
       console.error(error);
@@ -951,31 +1014,35 @@
 
   function sendWhatsApp(id){
     const s=sales.find(x=>x.id===id); if(!s) return;
-    const acc=(s.accessories||[]).map(a=>`• ${a.name}${num(a.price)>0?" - "+money(a.price):""}`).join("\n");
-    const pays=(s.payments||[]).map(p=>`• ${p.method}: ${money(p.amount)}`).join("\n");
+
+    const acc=(s.accessories||[])
+      .map(a=>`- ${a.name}${num(a.price)>0?" - "+money(a.price):""}`)
+      .join("\n");
+
+    const pays=(s.payments||[])
+      .map(p=>`- ${p.method}: ${money(p.amount)}`)
+      .join("\n");
+
+    const totalPagamentos=(s.payments||[])
+      .reduce((total,p)=>total+num(p.amount),0);
+
+    const totalGeral=totalPagamentos>0 ? totalPagamentos : num(s.finalValue);
 
     const msg =
-`Olá, ${s.client}! 👋
+`*VENDA REALIZADA*
 
-Segue o resumo da sua compra na *Ampertech*:
+*APARELHO:* ${s.device}
+*DATA:* ${formatDate(s.date)}
+*VENDEDOR:* ${s.seller || "-"}
+*STATUS:* ${saleStatus(s)}
+${acc ? `\n*ACESSÓRIOS:*\n${acc}` : ""}
+${s.notes ? `\n*OBSERVAÇÃO:* ${s.notes}` : ""}
+${pays ? `\n*PAGAMENTO:*\n${pays}` : ""}
 
-📱 *Aparelho:* ${s.device}
-📅 *Data:* ${formatDate(s.date)}
-💰 *Valor:* ${money(s.finalValue)}
-✅ *Status:* ${saleStatus(s)}
-${pays ? `\n💳 *Pagamento:*\n${pays}` : ""}
-${acc ? `\n🎁 *Acessórios:*\n${acc}` : ""}
-${s.notes ? `\n📝 *Observação:* ${s.notes}` : ""}
+*TOTAL:* ${money(totalGeral)}`;
 
-Obrigado pela preferência!`;
-
-    let phone=(s.phone||"").replace(/\D/g,"");
-    if(phone && !phone.startsWith("55")) phone="55"+phone;
-
-    const url=phone
-      ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-
+    // Sem telefone: abre o compartilhamento do WhatsApp para selecionar o grupo interno da loja.
+    const url=`https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url,"_blank","noopener");
   }
 
@@ -1027,7 +1094,8 @@ Obrigado pela preferência!`;
   }
 
   function addPayment(){
-    paymentRows.push({method:"Pix",amount:0});
+    const defaultMethod = paymentMethods[0]?.name || "Pix";
+    paymentRows.push({method:defaultMethod,amount:0});
     renderPayments();
   }
 
@@ -1035,16 +1103,21 @@ Obrigado pela preferência!`;
     const wrap=$("payments");
     if(!paymentRows.length){ wrap.innerHTML=""; return; }
 
-    wrap.innerHTML=paymentRows.map((p,i)=>`
+    wrap.innerHTML=paymentRows.map((p,i)=>{
+      let methods = paymentMethods.map(m=>m.name);
+      if(p.method && !methods.some(m=>m.toLowerCase()===String(p.method).toLowerCase())) methods.push(p.method);
+      if(!methods.length) methods=["Pix"];
+      return `
       <div class="payment-line">
         <select class="select pay-method" data-i="${i}" onchange="paymentRows[${i}].method=this.value">
-          ${["Pix","Dinheiro","Cartão débito","Cartão crédito","Transferência","Outro"].map(m=>`<option ${p.method===m?"selected":""}>${m}</option>`).join("")}
+          ${methods.map(m=>`<option value="${escapeHtml(m)}" ${p.method===m?"selected":""}>${escapeHtml(m)}</option>`).join("")}
         </select>
         <input class="input pay-amount" data-i="${i}" inputmode="decimal"
           value="${num(p.amount)?num(p.amount).toFixed(2).replace(".",","):""}" placeholder="0,00"
           oninput="paymentRows[${i}].amount=num(this.value);updateSummary()">
         <button type="button" class="secondary-btn delete" onclick="removePayment(${i})">✕</button>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   }
 
   function removePayment(i){
@@ -1155,6 +1228,68 @@ Obrigado pela preferência!`;
     }
   }
 
+  function renderPaymentMethods(){
+    const wrap=$("paymentMethodList");
+    if(!wrap) return;
+
+    if(!paymentMethods.length){
+      wrap.innerHTML='<div class="card empty">Nenhuma forma de pagamento cadastrada.</div>';
+      return;
+    }
+
+    wrap.innerHTML=paymentMethods.map(m=>`
+      <div class="list-item">
+        <div class="list-item-left">
+          <div class="cube">▤</div>
+          <div>
+            <div class="list-item-title">${escapeHtml(m.name)}</div>
+            <div class="list-item-meta">Disponível na Nova Venda</div>
+          </div>
+        </div>
+        <button class="icon-btn delete" title="Remover forma de pagamento" onclick="deletePaymentMethod('${m.id}')">♲</button>
+      </div>
+    `).join("");
+  }
+
+  async function addPaymentMethod(){
+    const input=$("newPaymentMethodName");
+    const name=input.value.trim();
+    if(!name){ toast("Informe a forma de pagamento."); return; }
+
+    if(paymentMethods.some(m=>String(m.name||"").trim().toLowerCase()===name.toLowerCase())){
+      toast("Essa forma de pagamento já está cadastrada.");
+      return;
+    }
+
+    try{
+      await setDoc(doc(db,"formas_pagamento",uid()),{
+        name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+      input.value="";
+      toast("Forma de pagamento adicionada.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  async function deletePaymentMethod(id){
+    const method=paymentMethods.find(m=>m.id===id);
+    if(!method) return;
+    if(!confirm(`Remover "${method.name}" da lista? As vendas antigas continuarão com essa forma de pagamento.`)) return;
+
+    try{
+      await deleteDoc(doc(db,"formas_pagamento",id));
+      toast("Forma de pagamento removida.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
   function renderAccessories(){
     const wrap=$("accessoryList");
     if(!wrap) return;
@@ -1247,6 +1382,7 @@ Obrigado pela preferência!`;
     sendWhatsApp,toggleAccessory,addManualAccessory,removeSelectedAccessory,
     addPayment,removePayment,updateSummary,openAccessoryModal,closeAccessoryModal,
     saveAccessory,deleteAccessory,addSeller,deleteSeller,renderSellers,
+    addPaymentMethod,deletePaymentMethod,renderPaymentMethods,
     renderSales,renderAccessories,renderSellerOptions,
     num,selectedAccessories,paymentRows
   });
@@ -1256,6 +1392,7 @@ Obrigado pela preferência!`;
   renderAccessories();
   renderSellers();
   renderSellerOptions();
+  renderPaymentMethods();
 </script>
 </body>
 </html>
