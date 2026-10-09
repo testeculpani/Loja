@@ -1053,8 +1053,9 @@
     const totalGeral=totalPagamentos>0 ? totalPagamentos : num(s.finalValue);
 
     const msg =
-`*APARELHO:* ${s.device}
-*VENDEDOR:* ${s.seller || "-"}
+`*VENDEDOR:* ${s.seller || "-"}:
+
+*Aparelho:* ${s.device}
 
 *ACESSÓRIOS:*
 ${acc || "- Nenhum"}
