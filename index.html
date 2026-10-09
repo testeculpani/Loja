@@ -178,6 +178,7 @@
     .green{color:#009c56}
     .submit-wide{width:100%;margin-top:14px;padding:13px}
     .payment-line{display:grid;grid-template-columns:1fr 140px 42px;gap:8px;margin-top:8px}
+    .payment-entry{display:grid;grid-template-columns:1fr 1fr 140px 42px;gap:8px;margin-top:8px}
     .muted{color:var(--muted)}
     .empty{padding:45px 20px;text-align:center;color:var(--muted)}
     .modal-backdrop{
@@ -237,7 +238,7 @@
       .user-email{display:none}
     }
     @media(max-width:580px){
-      .grid-2,.sale-top,.payment-line{grid-template-columns:1fr}
+      .grid-2,.sale-top,.payment-line,.payment-entry{grid-template-columns:1fr}
       .sale-price{text-align:left}
       .sale-bottom{align-items:flex-start;flex-direction:column}
       .actions{width:100%;justify-content:flex-end}
@@ -434,6 +435,16 @@
             <div class="muted" style="font-size:12px">As formas cadastradas aqui aparecem automaticamente na Nova Venda. Excluir uma opção não altera vendas antigas.</div>
           </div>
           <div id="paymentMethodList"></div>
+
+          <div class="card" style="margin-top:18px">
+            <h2 class="section-title">Onde o pagamento caiu</h2>
+            <div class="seller-add">
+              <input id="newPaymentDestinationName" class="input" placeholder="Ex.: Infinity, Conta Vini, Conta Dither..." onkeydown="if(event.key==='Enter'){event.preventDefault();addPaymentDestination()}">
+              <button class="primary-btn" type="button" onclick="addPaymentDestination()">＋ Adicionar</button>
+            </div>
+            <div class="muted" style="font-size:12px">Essas opções aparecem em cada pagamento da Nova Venda e ficam salvas no Firebase.</div>
+          </div>
+          <div id="paymentDestinationList"></div>
         </div>
       </section>
     </main>
@@ -521,10 +532,17 @@
     {id:"outro",name:"Outro"}
   ];
 
+  const defaultPaymentDestinations = [
+    {id:"infinity",name:"Infinity"},
+    {id:"conta-vini",name:"Conta Vini"},
+    {id:"conta-dither",name:"Conta Dither"}
+  ];
+
   let sales = [];
   let accessories = [];
   let sellers = [];
   let paymentMethods = [];
+  let paymentDestinations = [];
   let editingSaleId = null;
   let editingAccessoryId = null;
   let selectedAccessories = [];
@@ -534,6 +552,7 @@
   let stopAccessoriesListener = null;
   let stopSellersListener = null;
   let stopPaymentMethodsListener = null;
+  let stopPaymentDestinationsListener = null;
   let currentUser = null;
 
   const $ = id => document.getElementById(id);
@@ -634,11 +653,27 @@
     await batch.commit();
   }
 
+  async function seedPaymentDestinationsIfNeeded(){
+    const snap = await getDocs(collection(db,"destinos_pagamento"));
+    if(!snap.empty) return;
+    const batch = writeBatch(db);
+    defaultPaymentDestinations.forEach(d=>{
+      batch.set(doc(db,"destinos_pagamento",d.id),{
+        name:d.name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+    });
+    await batch.commit();
+  }
+
   function startRealtime(){
     if(stopSalesListener) stopSalesListener();
     if(stopAccessoriesListener) stopAccessoriesListener();
     if(stopSellersListener) stopSellersListener();
     if(stopPaymentMethodsListener) stopPaymentMethodsListener();
+    if(stopPaymentDestinationsListener) stopPaymentDestinationsListener();
 
     setSync("", "Sincronizando");
 
@@ -703,6 +738,22 @@
         toast(firebaseErrorMessage(err));
       }
     );
+
+    stopPaymentDestinationsListener = onSnapshot(
+      collection(db,"destinos_pagamento"),
+      snap=>{
+        paymentDestinations = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+        renderPaymentDestinations();
+        renderPayments();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
   }
 
   $("loginForm").addEventListener("submit", async e=>{
@@ -743,6 +794,7 @@
       if(stopAccessoriesListener){ stopAccessoriesListener(); stopAccessoriesListener=null; }
       if(stopSellersListener){ stopSellersListener(); stopSellersListener=null; }
       if(stopPaymentMethodsListener){ stopPaymentMethodsListener(); stopPaymentMethodsListener=null; }
+      if(stopPaymentDestinationsListener){ stopPaymentDestinationsListener(); stopPaymentDestinationsListener=null; }
       return;
     }
 
@@ -755,6 +807,7 @@
       await seedAccessoriesIfNeeded();
       await seedSellersIfNeeded();
       await seedPaymentMethodsIfNeeded();
+      await seedPaymentDestinationsIfNeeded();
       startRealtime();
     }catch(error){
       console.error(error);
@@ -770,6 +823,7 @@
     if(view==="sales") renderSales();
     if(view==="accessories") renderAccessories();
     if(view==="sellers") renderSellers();
+    if(view==="payment-methods"){ renderPaymentMethods(); renderPaymentDestinations(); }
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
@@ -829,7 +883,8 @@
     wrap.innerHTML=list.map(s=>{
       const status=saleStatus(s);
       const pill=status==="Pago"?"status-paid":status==="Cancelado"?"status-cancelled":"status-pending";
-      const p=(s.payments||[])[0]?.method || "—";
+      const firstPayment=(s.payments||[])[0];
+      const p=firstPayment ? `${firstPayment.method || ""}${firstPayment.destination ? " • "+firstPayment.destination : ""}` : "—";
       return `
       <div class="sale-card">
         <div class="sale-top">
@@ -1010,7 +1065,7 @@
     const s=sales.find(x=>x.id===id); if(!s) return;
     const received=(s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
     const acc=(s.accessories||[]).map(a=>`${escapeHtml(a.name)} (${money(a.price)})`).join("<br>") || "Nenhum";
-    const pays=(s.payments||[]).map(p=>`${escapeHtml(p.method)} — ${money(p.amount)}`).join("<br>") || "Nenhum";
+    const pays=(s.payments||[]).map(p=>`${escapeHtml(p.method)}${p.destination ? ` • ${escapeHtml(p.destination)}` : ""} — ${money(p.amount)}`).join("<br>") || "Nenhum";
 
     $("viewSaleBody").innerHTML=`
       <div class="summary-line"><span>Ordem</span><strong>#${getSaleSequenceMap().get(s.id) || "-"}</strong></div>
@@ -1044,7 +1099,7 @@
       .join("\n");
 
     const pays=(s.payments||[])
-      .map(p=>`- ${p.method}: ${money(p.amount)}`)
+      .map(p=>`- ${p.method}${p.destination ? ` - ${p.destination}` : ""}: ${money(p.amount)}`)
       .join("\n");
 
     const totalPagamentos=(s.payments||[])
@@ -1118,7 +1173,8 @@ ${pays || "- Não informado"}
 
   function addPayment(){
     const defaultMethod = paymentMethods[0]?.name || "Pix";
-    paymentRows.push({method:defaultMethod,amount:0});
+    const defaultDestination = paymentDestinations[0]?.name || "";
+    paymentRows.push({method:defaultMethod,destination:defaultDestination,amount:0});
     renderPayments();
   }
 
@@ -1130,10 +1186,18 @@ ${pays || "- Não informado"}
       let methods = paymentMethods.map(m=>m.name);
       if(p.method && !methods.some(m=>m.toLowerCase()===String(p.method).toLowerCase())) methods.push(p.method);
       if(!methods.length) methods=["Pix"];
+
+      let destinations = paymentDestinations.map(d=>d.name);
+      if(p.destination && !destinations.some(d=>d.toLowerCase()===String(p.destination).toLowerCase())) destinations.push(p.destination);
+
       return `
-      <div class="payment-line">
+      <div class="payment-entry">
         <select class="select pay-method" data-i="${i}" onchange="paymentRows[${i}].method=this.value">
           ${methods.map(m=>`<option value="${escapeHtml(m)}" ${p.method===m?"selected":""}>${escapeHtml(m)}</option>`).join("")}
+        </select>
+        <select class="select pay-destination" data-i="${i}" onchange="paymentRows[${i}].destination=this.value">
+          <option value="">Onde caiu?</option>
+          ${destinations.map(d=>`<option value="${escapeHtml(d)}" ${p.destination===d?"selected":""}>${escapeHtml(d)}</option>`).join("")}
         </select>
         <input class="input pay-amount" data-i="${i}" inputmode="decimal"
           value="${num(p.amount)?num(p.amount).toFixed(2).replace(".",","):""}" placeholder="0,00"
@@ -1152,6 +1216,7 @@ ${pays || "- Não informado"}
   function collectPayments(){
     return paymentRows.map((p,i)=>({
       method:document.querySelector(`.pay-method[data-i="${i}"]`)?.value || p.method,
+      destination:document.querySelector(`.pay-destination[data-i="${i}"]`)?.value || p.destination || "",
       amount:num(document.querySelector(`.pay-amount[data-i="${i}"]`)?.value || p.amount)
     })).filter(p=>p.amount>0 || p.method);
   }
@@ -1313,6 +1378,68 @@ ${pays || "- Não informado"}
     }
   }
 
+  function renderPaymentDestinations(){
+    const wrap=$("paymentDestinationList");
+    if(!wrap) return;
+
+    if(!paymentDestinations.length){
+      wrap.innerHTML='<div class="card empty">Nenhum destino de pagamento cadastrado.</div>';
+      return;
+    }
+
+    wrap.innerHTML=paymentDestinations.map(d=>`
+      <div class="list-item">
+        <div class="list-item-left">
+          <div class="cube">◎</div>
+          <div>
+            <div class="list-item-title">${escapeHtml(d.name)}</div>
+            <div class="list-item-meta">Disponível no campo “Onde caiu?”</div>
+          </div>
+        </div>
+        <button class="icon-btn delete" title="Remover destino" onclick="deletePaymentDestination('${d.id}')">♲</button>
+      </div>
+    `).join("");
+  }
+
+  async function addPaymentDestination(){
+    const input=$("newPaymentDestinationName");
+    const name=input.value.trim();
+    if(!name){ toast("Informe onde o pagamento caiu."); return; }
+
+    if(paymentDestinations.some(d=>String(d.name||"").trim().toLowerCase()===name.toLowerCase())){
+      toast("Essa opção já está cadastrada.");
+      return;
+    }
+
+    try{
+      await setDoc(doc(db,"destinos_pagamento",uid()),{
+        name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+      input.value="";
+      toast("Destino de pagamento adicionado.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  async function deletePaymentDestination(id){
+    const destination=paymentDestinations.find(d=>d.id===id);
+    if(!destination) return;
+    if(!confirm(`Remover "${destination.name}" da lista? As vendas antigas continuarão mostrando essa opção.`)) return;
+
+    try{
+      await deleteDoc(doc(db,"destinos_pagamento",id));
+      toast("Destino de pagamento removido.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
   function renderAccessories(){
     const wrap=$("accessoryList");
     if(!wrap) return;
@@ -1406,6 +1533,7 @@ ${pays || "- Não informado"}
     addPayment,removePayment,updateSummary,openAccessoryModal,closeAccessoryModal,
     saveAccessory,deleteAccessory,addSeller,deleteSeller,renderSellers,
     addPaymentMethod,deletePaymentMethod,renderPaymentMethods,
+    addPaymentDestination,deletePaymentDestination,renderPaymentDestinations,
     renderSales,renderAccessories,renderSellerOptions,
     num,selectedAccessories,paymentRows
   });
@@ -1416,6 +1544,7 @@ ${pays || "- Não informado"}
   renderSellers();
   renderSellerOptions();
   renderPaymentMethods();
+  renderPaymentDestinations();
 </script>
 </body>
 </html>
