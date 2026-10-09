@@ -1041,13 +1041,11 @@
 
     const acc=(s.accessories||[])
       .map(a=>`- ${a.name}${num(a.price)>0?" - "+money(a.price):""}`)
-      .join("
-");
+      .join("\n");
 
     const pays=(s.payments||[])
       .map(p=>`- ${p.method}: ${money(p.amount)}`)
-      .join("
-");
+      .join("\n");
 
     const totalPagamentos=(s.payments||[])
       .reduce((total,p)=>total+num(p.amount),0);
