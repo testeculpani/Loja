@@ -1099,7 +1099,10 @@
       .join("\n");
 
     const pays=(s.payments||[])
-      .map(p=>`- ${p.method}${p.destination ? ` - ${p.destination}` : ""}: ${money(p.amount)}`)
+      .map(p=>{
+        const ondeCaiu = p.destination ? `\n  Onde caiu: ${p.destination}` : "";
+        return `- ${p.method}: ${money(p.amount)}${ondeCaiu}`;
+      })
       .join("\n");
 
     const totalPagamentos=(s.payments||[])
