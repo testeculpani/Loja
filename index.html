@@ -786,8 +786,30 @@
     return final>0 && received+0.009>=final ? "Pago" : "Pendente";
   }
 
+  function getSaleSequenceMap(){
+    const chronological = sales.slice().sort((a,b)=>{
+      const av = Number(a.createdAtMs)||0;
+      const bv = Number(b.createdAtMs)||0;
+      if(av !== bv) return av - bv;
+      return String(a.id||"").localeCompare(String(b.id||""));
+    });
+
+    const map = new Map();
+    chronological.forEach((sale,index)=>{
+      const saved = Number(sale.launchNumber);
+      map.set(sale.id, saved > 0 ? saved : index + 1);
+    });
+    return map;
+  }
+
+  function getNextSaleSequence(){
+    const values = Array.from(getSaleSequenceMap().values());
+    return (values.length ? Math.max(...values) : 0) + 1;
+  }
+
   function renderSales(){
     const q = ($("saleSearch")?.value||"").toLowerCase().trim();
+    const sequenceMap = getSaleSequenceMap();
     let list = sales.slice().sort((a,b)=>(b.createdAtMs||0)-(a.createdAtMs||0));
     if(q) list=list.filter(s=>(`${s.client||""} ${s.device||""} ${s.seller||""}`).toLowerCase().includes(q));
     if(paidOnly) list=list.filter(s=>saleStatus(s)==="Pago");
@@ -812,7 +834,7 @@
       <div class="sale-card">
         <div class="sale-top">
           <div>
-            <div class="sale-title">▯ &nbsp;${escapeHtml(s.device)}</div>
+            <div class="sale-title"><span style="color:var(--primary);margin-right:7px">#${sequenceMap.get(s.id) || "-"}</span>▯ &nbsp;${escapeHtml(s.device)}</div>
             <div class="sale-sub">${escapeHtml(s.client)}<br>${formatDate(s.date)} &nbsp;•&nbsp; ${escapeHtml(s.seller||"")}</div>
           </div>
           <div>
@@ -917,6 +939,7 @@
       groupPost:$("groupPost").checked,
       cancelled:$("cancelled").checked,
       notes:$("notes").value.trim(),
+      launchNumber:old?.launchNumber || getNextSaleSequence(),
       createdAt:old?.createdAt || serverTimestamp(),
       createdAtMs:old?.createdAtMs || Date.now(),
       updatedAt:serverTimestamp(),
@@ -990,6 +1013,7 @@
     const pays=(s.payments||[]).map(p=>`${escapeHtml(p.method)} — ${money(p.amount)}`).join("<br>") || "Nenhum";
 
     $("viewSaleBody").innerHTML=`
+      <div class="summary-line"><span>Ordem</span><strong>#${getSaleSequenceMap().get(s.id) || "-"}</strong></div>
       <div class="summary-line"><span>Cliente</span><strong>${escapeHtml(s.client)}</strong></div>
       <div class="summary-line"><span>Telefone</span><strong>${escapeHtml(s.phone||"—")}</strong></div>
       <div class="summary-line"><span>Aparelho</span><strong>${escapeHtml(s.device)}</strong></div>
@@ -1017,11 +1041,13 @@
 
     const acc=(s.accessories||[])
       .map(a=>`- ${a.name}${num(a.price)>0?" - "+money(a.price):""}`)
-      .join("\n");
+      .join("
+");
 
     const pays=(s.payments||[])
       .map(p=>`- ${p.method}: ${money(p.amount)}`)
-      .join("\n");
+      .join("
+");
 
     const totalPagamentos=(s.payments||[])
       .reduce((total,p)=>total+num(p.amount),0);
@@ -1029,19 +1055,17 @@
     const totalGeral=totalPagamentos>0 ? totalPagamentos : num(s.finalValue);
 
     const msg =
-`*VENDA REALIZADA*
-
-*APARELHO:* ${s.device}
-*DATA:* ${formatDate(s.date)}
+`*APARELHO:* ${s.device}
 *VENDEDOR:* ${s.seller || "-"}
-*STATUS:* ${saleStatus(s)}
-${acc ? `\n*ACESSÓRIOS:*\n${acc}` : ""}
-${s.notes ? `\n*OBSERVAÇÃO:* ${s.notes}` : ""}
-${pays ? `\n*PAGAMENTO:*\n${pays}` : ""}
+
+*ACESSÓRIOS:*
+${acc || "- Nenhum"}
+
+*PAGAMENTO:*
+${pays || "- Não informado"}
 
 *TOTAL:* ${money(totalGeral)}`;
 
-    // Sem telefone: abre o compartilhamento do WhatsApp para selecionar o grupo interno da loja.
     const url=`https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url,"_blank","noopener");
   }
