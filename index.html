@@ -426,6 +426,14 @@
                   <option value="">Selecione...</option>
                 </select>
               </div>
+
+              <div class="switch-row">
+                <span>Postado no GrupoVenda</span>
+                <label class="switch">
+                  <input id="accessorySaleGroupPost" type="checkbox">
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
 
             <button id="saveAccessorySaleButton" class="primary-btn submit-wide" type="submit">
@@ -945,7 +953,15 @@
           </div>
           <div class="sale-bottom">
             <div class="checks">
-              <span class="mini-tag">Acessório</span>
+              <button
+                type="button"
+                class="chip ${s.groupPost ? "selected" : ""}"
+                style="padding:5px 9px"
+                onclick="toggleSaleCheck('${s.id}','groupPost')"
+                title="Marcar/desmarcar GrupoVenda"
+              >
+                <span class="check ${s.groupPost ? "ok" : "no"}">GrupoVenda</span>
+              </button>
             </div>
             <div class="actions">
               <span class="pay-label">${escapeHtml(destination)}</span>
@@ -1009,6 +1025,7 @@
   function openAccessorySale(){
     editingAccessorySaleId=null;
     $("accessorySaleForm").reset();
+    $("accessorySaleGroupPost").checked=false;
     $("accessorySaleTitle").textContent="Venda de Acessório";
     $("saveAccessorySaleLabel").textContent="Cadastrar Venda de Acessório";
     renderAccessorySaleDestinations();
@@ -1022,6 +1039,7 @@
     editingAccessorySaleId=id;
     $("accessorySaleItem").value=s.itemName || s.device || "";
     $("accessorySaleValue").value=num(s.finalValue) ? num(s.finalValue).toFixed(2).replace(".",",") : "";
+    $("accessorySaleGroupPost").checked=!!s.groupPost;
     renderAccessorySaleDestinations(s.accessoryDestination || (s.payments||[])[0]?.destination || "");
     $("accessorySaleTitle").textContent="Editar Venda de Acessório";
     $("saveAccessorySaleLabel").textContent="Salvar Alterações";
@@ -1067,7 +1085,7 @@
       }],
       delivery:false,
       soldPost:false,
-      groupPost:false,
+      groupPost:$("accessorySaleGroupPost").checked,
       cancelled:false,
       notes:"",
       launchNumber:old?.launchNumber || getNextSaleSequence(),
@@ -1258,6 +1276,7 @@
         <div class="summary-line"><span>Item</span><strong>${escapeHtml(s.itemName || s.device || "Acessório")}</strong></div>
         <div class="summary-line"><span>Valor</span><strong>${money(s.finalValue)}</strong></div>
         <div class="summary-line"><span>Onde caiu</span><strong>${escapeHtml(destination)}</strong></div>
+        <div class="summary-line"><span>GrupoVenda</span><strong>${s.groupPost ? "Marcado" : "Não marcado"}</strong></div>
         <div class="summary-line"><span>Data</span><strong>${formatDate(s.date)}</strong></div>`;
       $("viewModal").classList.add("show");
       return;
