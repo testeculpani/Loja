@@ -303,10 +303,13 @@
         <div class="content wide">
           <div class="page-head">
             <h1>Vendas</h1>
-            <button class="primary-btn" onclick="openNewSale()">＋ <span class="label">Nova Venda</span></button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <button class="secondary-btn" onclick="openAccessorySale()">＋ <span class="label">Acessório</span></button>
+              <button class="primary-btn" onclick="openNewSale()">＋ <span class="label">Nova Venda</span></button>
+            </div>
           </div>
           <div class="search-row">
-            <input id="saleSearch" class="input" placeholder="Buscar cliente ou celular..." oninput="renderSales()">
+            <input id="saleSearch" class="input" placeholder="Buscar celular ou acessório..." oninput="renderSales()">
             <button class="secondary-btn" title="Filtrar pagas" onclick="togglePaidFilter()">⌁</button>
           </div>
           <div id="salesList"></div>
@@ -390,6 +393,44 @@
               <div class="summary-line"><span class="muted">Status</span><strong id="sumStatus">Pendente</strong></div>
             </div>
             <button id="saveSaleButton" class="primary-btn submit-wide" type="submit">▣ <span id="saveSaleLabel">Cadastrar Venda</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-accessory-sale" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <div class="back-title">
+              <button class="icon-btn" onclick="navigate('sales')">←</button>
+              <h1 id="accessorySaleTitle">Venda de Acessório</h1>
+            </div>
+          </div>
+
+          <form id="accessorySaleForm">
+            <div class="card">
+              <h2 class="section-title">Venda rápida de acessório</h2>
+
+              <div class="field">
+                <label>Nome do item</label>
+                <input id="accessorySaleItem" class="input" required placeholder="Ex.: Fonte Gold, Película, Capa...">
+              </div>
+
+              <div class="field">
+                <label>Valor</label>
+                <input id="accessorySaleValue" class="input" required inputmode="decimal" placeholder="0,00">
+              </div>
+
+              <div class="field">
+                <label>Onde caiu</label>
+                <select id="accessorySaleDestination" class="select" required>
+                  <option value="">Selecione...</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="saveAccessorySaleButton" class="primary-btn submit-wide" type="submit">
+              ▣ <span id="saveAccessorySaleLabel">Cadastrar Venda de Acessório</span>
+            </button>
           </form>
         </div>
       </section>
@@ -544,6 +585,7 @@
   let paymentMethods = [];
   let paymentDestinations = [];
   let editingSaleId = null;
+  let editingAccessorySaleId = null;
   let editingAccessoryId = null;
   let selectedAccessories = [];
   let paymentRows = [];
@@ -746,6 +788,7 @@
           .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
         renderPaymentDestinations();
         renderPayments();
+        renderAccessorySaleDestinations();
         setSync("ok","Sincronizado");
       },
       err=>{
@@ -834,6 +877,7 @@
   }
 
   function saleStatus(s){
+    if(s.saleType==="accessory") return "Pago";
     if(s.cancelled) return "Cancelado";
     const final = num(s.finalValue);
     const received = (s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
@@ -865,7 +909,7 @@
     const q = ($("saleSearch")?.value||"").toLowerCase().trim();
     const sequenceMap = getSaleSequenceMap();
     let list = sales.slice().sort((a,b)=>(b.createdAtMs||0)-(a.createdAtMs||0));
-    if(q) list=list.filter(s=>(`${s.client||""} ${s.device||""} ${s.seller||""}`).toLowerCase().includes(q));
+    if(q) list=list.filter(s=>(`${s.client||""} ${s.device||""} ${s.itemName||""} ${s.seller||""} ${s.accessoryDestination||""}`).toLowerCase().includes(q));
     if(paidOnly) list=list.filter(s=>saleStatus(s)==="Pago");
 
     const wrap=$("salesList");
@@ -883,6 +927,36 @@
     wrap.innerHTML=list.map(s=>{
       const status=saleStatus(s);
       const pill=status==="Pago"?"status-paid":status==="Cancelado"?"status-cancelled":"status-pending";
+
+      if(s.saleType==="accessory"){
+        const itemName=s.itemName || s.device || "Acessório";
+        const destination=s.accessoryDestination || (s.payments||[])[0]?.destination || "—";
+        return `
+        <div class="sale-card">
+          <div class="sale-top">
+            <div>
+              <div class="sale-title"><span style="color:var(--primary);margin-right:7px">#${sequenceMap.get(s.id) || "-"}</span>◇ &nbsp;${escapeHtml(itemName)}</div>
+              <div class="sale-sub">Venda de acessório<br>${formatDate(s.date)} &nbsp;•&nbsp; Onde caiu: ${escapeHtml(destination)}</div>
+            </div>
+            <div>
+              <div class="sale-price">${money(s.finalValue)}</div>
+              <div class="status-pill status-paid">Pago</div>
+            </div>
+          </div>
+          <div class="sale-bottom">
+            <div class="checks">
+              <span class="mini-tag">Acessório</span>
+            </div>
+            <div class="actions">
+              <span class="pay-label">${escapeHtml(destination)}</span>
+              <button class="icon-btn" title="Visualizar" onclick="viewSale('${s.id}')">◉</button>
+              <button class="icon-btn" title="Editar" onclick="editAccessorySale('${s.id}')">✎</button>
+              <button class="icon-btn delete" title="Excluir" onclick="deleteSale('${s.id}')">♲</button>
+            </div>
+          </div>
+        </div>`;
+      }
+
       const firstPayment=(s.payments||[])[0];
       const p=firstPayment ? `${firstPayment.method || ""}${firstPayment.destination ? " • "+firstPayment.destination : ""}` : "—";
       return `
@@ -915,6 +989,114 @@
     }).join("");
   }
 
+  function renderAccessorySaleDestinations(preferredValue){
+    const select=$("accessorySaleDestination");
+    if(!select) return;
+
+    const current=preferredValue !== undefined ? preferredValue : select.value;
+    let destinations=paymentDestinations.map(d=>d.name);
+
+    if(current && !destinations.some(d=>d.toLowerCase()===String(current).toLowerCase())){
+      destinations.push(current);
+    }
+
+    select.innerHTML='<option value="">Selecione onde caiu...</option>' +
+      destinations.map(d=>`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
+
+    if(current) select.value=current;
+  }
+
+  function openAccessorySale(){
+    editingAccessorySaleId=null;
+    $("accessorySaleForm").reset();
+    $("accessorySaleTitle").textContent="Venda de Acessório";
+    $("saveAccessorySaleLabel").textContent="Cadastrar Venda de Acessório";
+    renderAccessorySaleDestinations();
+    navigate("accessory-sale");
+  }
+
+  function editAccessorySale(id){
+    const s=sales.find(x=>x.id===id);
+    if(!s || s.saleType!=="accessory") return;
+
+    editingAccessorySaleId=id;
+    $("accessorySaleItem").value=s.itemName || s.device || "";
+    $("accessorySaleValue").value=num(s.finalValue) ? num(s.finalValue).toFixed(2).replace(".",",") : "";
+    renderAccessorySaleDestinations(s.accessoryDestination || (s.payments||[])[0]?.destination || "");
+    $("accessorySaleTitle").textContent="Editar Venda de Acessório";
+    $("saveAccessorySaleLabel").textContent="Salvar Alterações";
+    navigate("accessory-sale");
+  }
+
+  $("accessorySaleForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    if(!currentUser){ toast("Faça login novamente."); return; }
+
+    const itemName=$("accessorySaleItem").value.trim();
+    const value=num($("accessorySaleValue").value);
+    const destination=$("accessorySaleDestination").value;
+
+    if(!itemName){ toast("Informe o nome do item."); return; }
+    if(value<=0){ toast("Informe um valor maior que zero."); return; }
+    if(!destination){ toast("Selecione onde o valor caiu."); return; }
+
+    const btn=$("saveAccessorySaleButton");
+    btn.disabled=true;
+    const oldLabel=$("saveAccessorySaleLabel").textContent;
+    $("saveAccessorySaleLabel").textContent="Salvando...";
+
+    const id=editingAccessorySaleId || uid();
+    const old=sales.find(x=>x.id===editingAccessorySaleId);
+
+    const item={
+      saleType:"accessory",
+      itemName,
+      device:itemName,
+      client:"",
+      phone:"",
+      seller:"",
+      date:old?.date || todayISO(),
+      imei:"",
+      finalValue:value,
+      accessoryDestination:destination,
+      accessories:[],
+      payments:[{
+        method:"Venda de acessório",
+        destination,
+        amount:value
+      }],
+      delivery:false,
+      soldPost:false,
+      groupPost:false,
+      cancelled:false,
+      notes:"",
+      launchNumber:old?.launchNumber || getNextSaleSequence(),
+      createdAt:old?.createdAt || serverTimestamp(),
+      createdAtMs:old?.createdAtMs || Date.now(),
+      updatedAt:serverTimestamp(),
+      updatedAtMs:Date.now(),
+      createdBy:old?.createdBy || currentUser.uid,
+      createdByEmail:old?.createdByEmail || currentUser.email || "",
+      updatedBy:currentUser.uid,
+      updatedByEmail:currentUser.email || ""
+    };
+
+    try{
+      setSync("","Salvando");
+      await setDoc(doc(db,"vendas",id),item,{merge:true});
+      toast(editingAccessorySaleId ? "Venda de acessório atualizada." : "Venda de acessório cadastrada.");
+      editingAccessorySaleId=null;
+      navigate("sales");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+      setSync("err","Erro ao salvar");
+    }finally{
+      btn.disabled=false;
+      $("saveAccessorySaleLabel").textContent=oldLabel;
+    }
+  });
+
   function openNewSale(){
     editingSaleId=null;
     selectedAccessories=[];
@@ -935,6 +1117,7 @@
 
   function editSale(id){
     const s=sales.find(x=>x.id===id); if(!s) return;
+    if(s.saleType==="accessory"){ editAccessorySale(id); return; }
     editingSaleId=id;
     $("client").value=s.client||"";
     $("phone").value=s.phone||"";
@@ -1022,7 +1205,10 @@
 
   async function deleteSale(id){
     const s=sales.find(x=>x.id===id); if(!s) return;
-    if(!confirm(`Excluir a venda de ${s.client}?`)) return;
+    const label=s.saleType==="accessory"
+      ? `a venda do acessório "${s.itemName || s.device || "Acessório"}"`
+      : `a venda de ${s.client}`;
+    if(!confirm(`Excluir ${label}?`)) return;
     try{
       setSync("","Excluindo");
       await deleteDoc(doc(db,"vendas",id));
@@ -1063,6 +1249,20 @@
 
   function viewSale(id){
     const s=sales.find(x=>x.id===id); if(!s) return;
+
+    if(s.saleType==="accessory"){
+      const destination=s.accessoryDestination || (s.payments||[])[0]?.destination || "—";
+      $("viewSaleBody").innerHTML=`
+        <div class="summary-line"><span>Ordem</span><strong>#${getSaleSequenceMap().get(s.id) || "-"}</strong></div>
+        <div class="summary-line"><span>Tipo</span><strong>Venda de acessório</strong></div>
+        <div class="summary-line"><span>Item</span><strong>${escapeHtml(s.itemName || s.device || "Acessório")}</strong></div>
+        <div class="summary-line"><span>Valor</span><strong>${money(s.finalValue)}</strong></div>
+        <div class="summary-line"><span>Onde caiu</span><strong>${escapeHtml(destination)}</strong></div>
+        <div class="summary-line"><span>Data</span><strong>${formatDate(s.date)}</strong></div>`;
+      $("viewModal").classList.add("show");
+      return;
+    }
+
     const received=(s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
     const acc=(s.accessories||[]).map(a=>`${escapeHtml(a.name)} (${money(a.price)})`).join("<br>") || "Nenhum";
     const pays=(s.payments||[]).map(p=>`${escapeHtml(p.method)}${p.destination ? ` • ${escapeHtml(p.destination)}` : ""} — ${money(p.amount)}`).join("<br>") || "Nenhum";
@@ -1531,7 +1731,7 @@ ${pays || "- Não informado"}
 
   // Expor funções usadas pelos onclicks do HTML.
   Object.assign(window,{
-    navigate,togglePaidFilter,openNewSale,editSale,deleteSale,toggleSaleCheck,viewSale,closeViewModal,
+    navigate,togglePaidFilter,openNewSale,openAccessorySale,editAccessorySale,editSale,deleteSale,toggleSaleCheck,viewSale,closeViewModal,
     sendWhatsApp,toggleAccessory,addManualAccessory,removeSelectedAccessory,
     addPayment,removePayment,updateSummary,openAccessoryModal,closeAccessoryModal,
     saveAccessory,deleteAccessory,addSeller,deleteSeller,renderSellers,
@@ -1548,6 +1748,7 @@ ${pays || "- Não informado"}
   renderSellerOptions();
   renderPaymentMethods();
   renderPaymentDestinations();
+  renderAccessorySaleDestinations();
 </script>
 </body>
 </html>
