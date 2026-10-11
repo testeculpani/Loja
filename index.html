@@ -411,6 +411,13 @@
               <h2 class="section-title">Venda rápida de acessório</h2>
 
               <div class="field">
+                <label>Vendedor</label>
+                <select id="accessorySaleSeller" class="select" required>
+                  <option value="">Carregando vendedores...</option>
+                </select>
+              </div>
+
+              <div class="field">
                 <label>Nome do item</label>
                 <input id="accessorySaleItem" class="input" required placeholder="Ex.: Fonte Gold, Película, Capa...">
               </div>
@@ -763,6 +770,7 @@
         sellers = snap.docs.map(d=>({id:d.id,...d.data()}))
           .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
         renderSellerOptions();
+        renderAccessorySaleSellerOptions();
         renderSellers();
         setSync("ok","Sincronizado");
       },
@@ -944,7 +952,7 @@
           <div class="sale-top">
             <div>
               <div class="sale-title"><span style="color:var(--primary);margin-right:7px">#${sequenceMap.get(s.id) || "-"}</span>◇ &nbsp;${escapeHtml(itemName)}</div>
-              <div class="sale-sub">Venda de acessório<br>${formatDate(s.date)} &nbsp;•&nbsp; Onde caiu: ${escapeHtml(destination)}</div>
+              <div class="sale-sub">${escapeHtml(s.seller || "Sem vendedor")}<br>${formatDate(s.date)} &nbsp;•&nbsp; Onde caiu: ${escapeHtml(destination)}</div>
             </div>
             <div>
               <div class="sale-price">${money(s.finalValue)}</div>
@@ -965,6 +973,7 @@
             </div>
             <div class="actions">
               <span class="pay-label">${escapeHtml(destination)}</span>
+              <button class="icon-btn whatsapp" title="Enviar pelo WhatsApp" onclick="sendWhatsApp('${s.id}')">◉</button>
               <button class="icon-btn" title="Visualizar" onclick="viewSale('${s.id}')">◉</button>
               <button class="icon-btn" title="Editar" onclick="editAccessorySale('${s.id}')">✎</button>
               <button class="icon-btn delete" title="Excluir" onclick="deleteSale('${s.id}')">♲</button>
@@ -1005,6 +1014,23 @@
     }).join("");
   }
 
+  function renderAccessorySaleSellerOptions(preferredValue){
+    const select=$("accessorySaleSeller");
+    if(!select) return;
+
+    const current=preferredValue !== undefined ? preferredValue : select.value;
+    let list=sellers.slice();
+
+    if(current && !list.some(s=>String(s.name||"").toLowerCase()===String(current).toLowerCase())){
+      list.push({id:"legacy-accessory",name:current});
+    }
+
+    select.innerHTML='<option value="">Vendedor *</option>' +
+      list.map(s=>`<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("");
+
+    if(current) select.value=current;
+  }
+
   function renderAccessorySaleDestinations(preferredValue){
     const select=$("accessorySaleDestination");
     if(!select) return;
@@ -1028,6 +1054,7 @@
     $("accessorySaleGroupPost").checked=false;
     $("accessorySaleTitle").textContent="Venda de Acessório";
     $("saveAccessorySaleLabel").textContent="Cadastrar Venda de Acessório";
+    renderAccessorySaleSellerOptions();
     renderAccessorySaleDestinations();
     navigate("accessory-sale");
   }
@@ -1037,6 +1064,8 @@
     if(!s || s.saleType!=="accessory") return;
 
     editingAccessorySaleId=id;
+    renderAccessorySaleSellerOptions(s.seller || "");
+    $("accessorySaleSeller").value=s.seller || "";
     $("accessorySaleItem").value=s.itemName || s.device || "";
     $("accessorySaleValue").value=num(s.finalValue) ? num(s.finalValue).toFixed(2).replace(".",",") : "";
     $("accessorySaleGroupPost").checked=!!s.groupPost;
@@ -1050,10 +1079,12 @@
     e.preventDefault();
     if(!currentUser){ toast("Faça login novamente."); return; }
 
+    const seller=$("accessorySaleSeller").value;
     const itemName=$("accessorySaleItem").value.trim();
     const value=num($("accessorySaleValue").value);
     const destination=$("accessorySaleDestination").value;
 
+    if(!seller){ toast("Selecione o vendedor."); return; }
     if(!itemName){ toast("Informe o nome do item."); return; }
     if(value<=0){ toast("Informe um valor maior que zero."); return; }
     if(!destination){ toast("Selecione onde o valor caiu."); return; }
@@ -1072,7 +1103,7 @@
       device:itemName,
       client:"",
       phone:"",
-      seller:"",
+      seller,
       date:old?.date || todayISO(),
       imei:"",
       finalValue:value,
@@ -1273,6 +1304,7 @@
       $("viewSaleBody").innerHTML=`
         <div class="summary-line"><span>Ordem</span><strong>#${getSaleSequenceMap().get(s.id) || "-"}</strong></div>
         <div class="summary-line"><span>Tipo</span><strong>Venda de acessório</strong></div>
+        <div class="summary-line"><span>Vendedor</span><strong>${escapeHtml(s.seller || "—")}</strong></div>
         <div class="summary-line"><span>Item</span><strong>${escapeHtml(s.itemName || s.device || "Acessório")}</strong></div>
         <div class="summary-line"><span>Valor</span><strong>${money(s.finalValue)}</strong></div>
         <div class="summary-line"><span>Onde caiu</span><strong>${escapeHtml(destination)}</strong></div>
@@ -1312,6 +1344,22 @@
 
   function sendWhatsApp(id){
     const s=sales.find(x=>x.id===id); if(!s) return;
+
+    if(s.saleType==="accessory"){
+      const destination=s.accessoryDestination || (s.payments||[])[0]?.destination || "-";
+      const msg =
+`*Vendedor:* ${s.seller || "-"}
+
+*Item:* ${s.itemName || s.device || "-"}
+
+*Valor:* ${money(s.finalValue)}
+
+*Onde caiu:* ${destination}`;
+
+      const url=`https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(url,"_blank","noopener");
+      return;
+    }
 
     const acc=(s.accessories||[])
       .map(a=>`- ${a.name}${num(a.price)>0?" - "+money(a.price):""}`)
@@ -1765,6 +1813,7 @@ ${pays || "- Não informado"}
   renderAccessories();
   renderSellers();
   renderSellerOptions();
+  renderAccessorySaleSellerOptions();
   renderPaymentMethods();
   renderPaymentDestinations();
   renderAccessorySaleDestinations();
