@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ampertech • Controle de Vendas</title>
+  <meta name="theme-color" content="#4167e8" />
+  <style>
+    :root{
+      --primary:#4167e8;
+      --primary-2:#3156d9;
+      --primary-soft:#eef2ff;
+      --bg:#f6f8fc;
+      --card:#ffffff;
+      --text:#101828;
+      --muted:#667085;
+      --line:#dce3ec;
+      --success:#12b76a;
+      --success-soft:#dff8eb;
+      --danger:#ff4d4f;
+      --danger-soft:#fff0f0;
+      --shadow:0 1px 3px rgba(16,24,40,.12),0 1px 2px rgba(16,24,40,.06);
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      background:var(--bg);color:var(--text)
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    [hidden]{display:none!important}
+    .app{min-height:100vh}
+    .topbar{
+      height:48px;background:#fff;border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 10px;
+      position:sticky;top:0;z-index:20
+    }
+    .brand{display:flex;align-items:center;gap:9px}
+    .brand-logo{
+      width:32px;height:32px;border-radius:10px;background:var(--primary);color:#fff;
+      display:grid;place-items:center;font-weight:800
+    }
+    .brand-text strong{display:block;font-size:14px;line-height:1.05}
+    .brand-text span{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+    .top-actions{display:flex;align-items:center;gap:8px}
+    .sync{
+      display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);
+      padding:5px 8px;border-radius:999px;background:#f8fafc;border:1px solid var(--line)
+    }
+    .sync-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b}
+    .sync.ok .sync-dot{background:var(--success)}
+    .sync.err .sync-dot{background:var(--danger)}
+    .user-email{font-size:11px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .icon-btn{
+      border:0;background:transparent;color:#61708a;border-radius:8px;
+      min-width:34px;height:34px;display:grid;place-items:center;padding:0 8px
+    }
+    .icon-btn:hover{background:#f2f4f7}
+    .layout{display:grid;grid-template-columns:214px 1fr;min-height:calc(100vh - 48px)}
+    .sidebar{
+      background:#fff;border-right:1px solid var(--line);padding:22px 12px;
+      position:sticky;top:48px;height:calc(100vh - 48px)
+    }
+    .nav-btn{
+      width:100%;border:0;background:transparent;color:#526078;
+      display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;margin-bottom:5px;
+      text-align:left;font-weight:500
+    }
+    .nav-btn:hover,.nav-btn.active{background:var(--primary-soft);color:var(--primary)}
+    .main{padding:20px 24px 50px}
+    .content{max-width:740px;margin:0 auto}
+    .content.wide{max-width:900px}
+    .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+    .page-head h1{font-size:20px;margin:0}
+    .back-title{display:flex;align-items:center;gap:12px}
+    .primary-btn,.secondary-btn,.danger-btn{
+      border:0;border-radius:10px;padding:10px 16px;font-weight:700;
+      display:inline-flex;align-items:center;gap:8px;justify-content:center
+    }
+    .primary-btn{background:var(--primary);color:#fff;box-shadow:var(--shadow)}
+    .primary-btn:hover{background:var(--primary-2)}
+    .secondary-btn{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .danger-btn{background:var(--danger);color:#fff}
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+      box-shadow:var(--shadow);padding:16px;margin-bottom:14px
+    }
+    .section-title{
+      margin:0 0 12px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;
+      color:#5d6b82;font-weight:800
+    }
+    .search-row{display:grid;grid-template-columns:1fr 42px;gap:8px;margin-bottom:14px}
+    .input,.select,.textarea{
+      width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;
+      padding:10px 12px;color:var(--text);outline:none
+    }
+    .input:focus,.select:focus,.textarea:focus{
+      border-color:#9db0f8;box-shadow:0 0 0 3px rgba(65,103,232,.10)
+    }
+    .textarea{min-height:74px;resize:vertical}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field{margin-bottom:10px}
+    .field label{display:block;font-size:11px;color:#60708a;margin-bottom:5px}
+    .sale-card{
+      background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+      padding:16px;margin-bottom:12px
+    }
+    .sale-top{display:grid;grid-template-columns:1fr auto;gap:16px}
+    .sale-title{font-weight:800;font-size:14px;margin-bottom:4px}
+    .sale-sub{color:var(--muted);font-size:12px;line-height:1.6}
+    .sale-price{text-align:right;font-weight:800}
+    .status-pill{
+      display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;
+      margin-top:6px;font-weight:700
+    }
+    .status-paid{background:var(--success-soft);color:#087a46}
+    .status-pending{background:#fff2cc;color:#8a5a00}
+    .status-cancelled{background:var(--danger-soft);color:#c43234}
+    .sale-bottom{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      border-top:1px solid var(--line);margin-top:12px;padding-top:11px
+    }
+    .checks{display:flex;gap:7px;flex-wrap:wrap;font-size:12px;color:#5f6b7c}
+    .check-inline{
+      border:1px solid var(--line);background:#fff;color:#5f6b7c;border-radius:8px;
+      padding:6px 9px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+      transition:.15s
+    }
+    .check-inline:hover{border-color:#9db0f8;background:#f8faff}
+    .check-inline.ok{background:#ecfdf3;border-color:#abefc6;color:#067647}
+    .check-inline.no{background:#fff;border-color:#e4e7ec;color:#667085}
+    .check-inline.ok::before{content:"✓";font-weight:900}
+    .check-inline.no::before{content:"✕";color:#f04438;font-weight:900}
+    .seller-add{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:14px}
+    .actions{display:flex;align-items:center;gap:4px}
+    .whatsapp{color:#07ad65!important;font-size:18px}
+    .delete{color:var(--danger)!important}
+    .pay-label{font-size:12px;color:#5f6b7c;margin-right:4px}
+    .quick-wrap{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+    .chip{
+      border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 11px;
+      font-size:12px;display:inline-flex;align-items:center;gap:7px
+    }
+    .chip:hover{border-color:#aebff9;background:#f8faff}
+    .chip.selected{background:var(--primary-soft);color:var(--primary);border-color:#b6c4fb}
+    .row-add{display:grid;grid-template-columns:1fr 38px;gap:8px}
+    .list-item{
+      border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;box-shadow:var(--shadow)
+    }
+    .list-item-left{display:flex;gap:11px;align-items:center}
+    .cube{
+      width:30px;height:30px;border-radius:10px;background:var(--primary-soft);color:var(--primary);
+      display:grid;place-items:center;font-size:15px
+    }
+    .list-item-title{font-size:13px;font-weight:700}
+    .list-item-meta{font-size:11px;color:var(--muted);margin-top:2px}
+    .mini-tag{
+      display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 8px;
+      margin-left:6px;color:#344054;background:#fff
+    }
+    .switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;font-size:13px}
+    .switch{position:relative;width:32px;height:18px;display:inline-block;flex:0 0 auto}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;inset:0;background:#dfe5ed;border-radius:999px;transition:.2s}
+    .slider:before{
+      content:"";position:absolute;width:14px;height:14px;left:2px;top:2px;background:#fff;border-radius:50%;
+      transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.15)
+    }
+    .switch input:checked + .slider{background:var(--primary)}
+    .switch input:checked + .slider:before{transform:translateX(14px)}
+    .summary{background:#f2f5fb;border:1px solid #bfd0ff;border-radius:13px;padding:16px}
+    .summary h3{font-size:13px;margin:0 0 10px}
+    .summary-line{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:6px 0}
+    .summary-line strong{text-align:right;font-weight:800}
+    .green{color:#009c56}
+    .submit-wide{width:100%;margin-top:14px;padding:13px}
+    .payment-line{display:grid;grid-template-columns:1fr 140px 42px;gap:8px;margin-top:8px}
+    .payment-entry{display:grid;grid-template-columns:1fr 1fr 140px 42px;gap:8px;margin-top:8px}
+    .muted{color:var(--muted)}
+    .empty{padding:45px 20px;text-align:center;color:var(--muted)}
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(16,24,40,.42);display:none;align-items:center;justify-content:center;
+      padding:20px;z-index:60
+    }
+    .modal-backdrop.show{display:flex}
+    .modal{
+      background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.22);
+      width:min(520px,100%);max-height:90vh;overflow:auto;padding:20px
+    }
+    .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .modal-head h3{margin:0;font-size:17px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}
+    .toast{
+      position:fixed;right:20px;bottom:20px;background:#111827;color:#fff;padding:11px 14px;border-radius:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;display:none;z-index:100
+    }
+    .toast.show{display:block}
+
+    .login-screen{
+      position:fixed;inset:0;background:linear-gradient(135deg,#f7f9ff,#eef2ff);
+      display:grid;place-items:center;padding:20px;z-index:200
+    }
+    .login-card{
+      width:min(410px,100%);background:#fff;border:1px solid var(--line);
+      border-radius:18px;box-shadow:0 20px 50px rgba(49,86,217,.12);padding:24px
+    }
+    .login-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+    .login-brand .brand-logo{width:42px;height:42px}
+    .login-brand h1{font-size:20px;margin:0}
+    .login-brand p{font-size:12px;color:var(--muted);margin:3px 0 0}
+    .login-error{
+      display:none;background:#fff2f2;border:1px solid #ffc9c9;color:#b42318;
+      padding:9px 11px;border-radius:9px;font-size:12px;margin-bottom:10px
+    }
+    .login-error.show{display:block}
+    .loading-screen{
+      position:fixed;inset:0;background:#f6f8fc;display:grid;place-items:center;z-index:190;
+      color:#667085;font-size:13px
+    }
+    .spinner{
+      width:24px;height:24px;border:3px solid #dfe5ed;border-top-color:var(--primary);
+      border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @media(max-width:860px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{
+        position:fixed;left:0;right:0;bottom:0;top:auto;height:64px;z-index:40;
+        border-right:0;border-top:1px solid var(--line);padding:6px;
+        display:grid;grid-template-columns:repeat(5,1fr)
+      }
+      .nav-btn{justify-content:center;padding:8px 4px;margin:0;gap:4px;flex-direction:column;font-size:10px}
+      .main{padding:16px 12px 86px}
+      .user-email{display:none}
+    }
+    @media(max-width:580px){
+      .grid-2,.sale-top,.payment-line,.payment-entry{grid-template-columns:1fr}
+      .sale-price{text-align:left}
+      .sale-bottom{align-items:flex-start;flex-direction:column}
+      .actions{width:100%;justify-content:flex-end}
+      .page-head{align-items:flex-start}
+      .page-head .primary-btn span.label{display:none}
+      .sync span{display:none}
+    }
+  </style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  <div><div class="spinner"></div>Conectando ao Firebase...</div>
+</div>
+
+<div id="loginScreen" class="login-screen" hidden>
+  <form id="loginForm" class="login-card">
+    <div class="login-brand">
+      <div class="brand-logo">A</div>
+      <div><h1>Ampertech</h1><p>Controle de Vendas</p></div>
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <div class="field">
+      <label>E-mail</label>
+      <input id="loginEmail" class="input" type="email" autocomplete="username" required placeholder="seuemail@exemplo.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input id="loginPassword" class="input" type="password" autocomplete="current-password" required placeholder="••••••••">
+    </div>
+    <button id="loginButton" class="primary-btn" style="width:100%;margin-top:4px" type="submit">Entrar</button>
+    <div class="muted" style="font-size:11px;margin-top:12px;line-height:1.5">
+      Os usuários são criados no Firebase Authentication. O sistema não permite cadastro público.
+    </div>
+  </form>
+</div>
+
+<div id="app" class="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">A</div>
+      <div class="brand-text"><strong>Ampertech</strong><span>Controle de Vendas</span></div>
+    </div>
+    <div class="top-actions">
+      <div id="syncBadge" class="sync"><span class="sync-dot"></span><span id="syncText">Sincronizando</span></div>
+      <div id="userEmail" class="user-email"></div>
+      <button id="logoutButton" class="icon-btn" title="Sair">⇥</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <button class="nav-btn active" data-view="sales" onclick="navigate('sales')"><span>▣</span>Vendas</button>
+      <button class="nav-btn" data-view="new" onclick="openNewSale()"><span>＋</span>Nova Venda</button>
+      <button class="nav-btn" data-view="accessories" onclick="navigate('accessories')"><span>◇</span>Acessórios</button>
+      <button class="nav-btn" data-view="sellers" onclick="navigate('sellers')"><span>♙</span>Vendedores</button>
+      <button class="nav-btn" data-view="payment-methods" onclick="navigate('payment-methods')"><span>▤</span>Pagamentos</button>
+    </aside>
+
+    <main class="main">
+      <section id="view-sales" class="view">
+        <div class="content wide">
+          <div class="page-head">
+            <h1>Vendas</h1>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <button class="secondary-btn" onclick="openAccessorySale()">＋ <span class="label">Acessório</span></button>
+              <button class="primary-btn" onclick="openNewSale()">＋ <span class="label">Nova Venda</span></button>
+            </div>
+          </div>
+          <div class="search-row">
+            <input id="saleSearch" class="input" placeholder="Buscar celular ou acessório..." oninput="renderSales()">
+            <button class="secondary-btn" title="Filtrar pagas" onclick="togglePaidFilter()">⌁</button>
+          </div>
+          <div id="salesList"></div>
+        </div>
+      </section>
+
+      <section id="view-new" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <div class="back-title">
+              <button class="icon-btn" onclick="navigate('sales')">←</button>
+              <h1 id="saleFormTitle">Nova Venda</h1>
+            </div>
+          </div>
+
+          <form id="saleForm">
+            <div class="card">
+              <h2 class="section-title">Cliente e Vendedor</h2>
+              <div class="field"><input id="client" class="input" required placeholder="Nome do cliente *"></div>
+              <div class="grid-2">
+                <div class="field"><input id="phone" class="input" placeholder="Telefone"></div>
+                <div class="field">
+                  <select id="seller" class="select" required>
+                    <option value="">Carregando vendedores...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field"><input id="date" class="input" type="date" required></div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Dados do Celular</h2>
+              <div class="field"><input id="device" class="input" required placeholder="Descrição do celular *"></div>
+              <div class="field"><input id="imei" class="input" placeholder="IMEI / Nº Série"></div>
+              <div class="field">
+                <label>Valor final da venda</label>
+                <input id="finalValue" class="input" inputmode="decimal" placeholder="0,00" oninput="updateSummary()">
+              </div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Acessórios</h2>
+              <div style="font-size:13px;font-weight:700;margin-bottom:8px">Acessórios rápidos</div>
+              <div id="quickAccessories" class="quick-wrap"></div>
+              <div class="row-add">
+                <input id="manualAccessory" class="input" placeholder="Adicionar acessório manual...">
+                <button type="button" class="secondary-btn" onclick="addManualAccessory()">＋</button>
+              </div>
+              <div id="selectedAccessories" style="margin-top:10px"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Pagamentos</h2>
+              <button type="button" class="secondary-btn" style="width:100%" onclick="addPayment()">＋ Adicionar Pagamento</button>
+              <div id="payments"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Checklist</h2>
+              <div class="switch-row"><span>Postado saindo para entrega</span><label class="switch"><input id="delivery" type="checkbox"><span class="slider"></span></label></div>
+              <div class="switch-row"><span>Postado/marcado vendido</span><label class="switch"><input id="soldPost" type="checkbox"><span class="slider"></span></label></div>
+              <div class="switch-row"><span>Postado no GrupoVenda</span><label class="switch"><input id="groupPost" type="checkbox"><span class="slider"></span></label></div>
+            </div>
+
+            <div class="card">
+              <h2 class="section-title">Status & Observações</h2>
+              <div class="switch-row" style="justify-content:flex-start">
+                <span class="muted">Forçar cancelamento:</span>
+                <label class="switch"><input id="cancelled" type="checkbox"><span class="slider"></span></label>
+              </div>
+              <textarea id="notes" class="textarea" placeholder="Observação / Fiado — Ex.: pagar dia 10/11, metade agora e metade no fim do mês..."></textarea>
+            </div>
+
+            <div class="summary">
+              <h3>Resumo</h3>
+              <div class="summary-line"><span class="muted">Acessórios cobrados</span><strong id="sumAccessories">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Valor final</span><strong id="sumFinal">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Total recebido</span><strong id="sumReceived">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Líquido recebido</span><strong id="sumNet">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Saldo pendente</span><strong id="sumPending" class="green">R$ 0,00</strong></div>
+              <div class="summary-line"><span class="muted">Status</span><strong id="sumStatus">Pendente</strong></div>
+            </div>
+            <button id="saveSaleButton" class="primary-btn submit-wide" type="submit">▣ <span id="saveSaleLabel">Cadastrar Venda</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-accessory-sale" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <div class="back-title">
+              <button class="icon-btn" onclick="navigate('sales')">←</button>
+              <h1 id="accessorySaleTitle">Venda de Acessório</h1>
+            </div>
+          </div>
+
+          <form id="accessorySaleForm">
+            <div class="card">
+              <h2 class="section-title">Venda rápida de acessório</h2>
+
+              <div class="field">
+                <label>Vendedor</label>
+                <select id="accessorySaleSeller" class="select" required>
+                  <option value="">Carregando vendedores...</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Nome do item</label>
+                <input id="accessorySaleItem" class="input" required placeholder="Ex.: Fonte Gold, Película, Capa...">
+              </div>
+
+              <div class="field">
+                <label>Valor</label>
+                <input id="accessorySaleValue" class="input" required inputmode="decimal" placeholder="0,00">
+              </div>
+
+              <div class="field">
+                <label>Onde caiu</label>
+                <select id="accessorySaleDestination" class="select" required>
+                  <option value="">Selecione...</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Observação</label>
+                <textarea id="accessorySaleNotes" class="textarea" placeholder="Ex.: Fiado — pagar dia 10/11, metade agora e metade no fim do mês..."></textarea>
+              </div>
+
+              <div class="switch-row">
+                <span>Postado no GrupoVenda</span>
+                <label class="switch">
+                  <input id="accessorySaleGroupPost" type="checkbox">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <button id="saveAccessorySaleButton" class="primary-btn submit-wide" type="submit">
+              ▣ <span id="saveAccessorySaleLabel">Cadastrar Venda de Acessório</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-accessories" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <h1>Acessórios</h1>
+            <button class="primary-btn" onclick="openAccessoryModal()">＋ Novo</button>
+          </div>
+          <div id="accessoryList"></div>
+        </div>
+      </section>
+
+      <section id="view-sellers" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <h1>Vendedores</h1>
+          </div>
+          <div class="card">
+            <h2 class="section-title">Adicionar vendedor</h2>
+            <div class="seller-add">
+              <input id="newSellerName" class="input" placeholder="Nome do vendedor" onkeydown="if(event.key==='Enter'){event.preventDefault();addSeller()}">
+              <button class="primary-btn" type="button" onclick="addSeller()">＋ Adicionar</button>
+            </div>
+            <div class="muted" style="font-size:12px">Os vendedores cadastrados aqui aparecem automaticamente na Nova Venda.</div>
+          </div>
+          <div id="sellerList"></div>
+        </div>
+      </section>
+
+      <section id="view-payment-methods" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <h1>Formas de Pagamento</h1>
+          </div>
+          <div class="card">
+            <h2 class="section-title">Adicionar forma de pagamento</h2>
+            <div class="seller-add">
+              <input id="newPaymentMethodName" class="input" placeholder="Ex.: Pix, Dinheiro, Cartão 12x..." onkeydown="if(event.key==='Enter'){event.preventDefault();addPaymentMethod()}">
+              <button class="primary-btn" type="button" onclick="addPaymentMethod()">＋ Adicionar</button>
+            </div>
+            <div class="muted" style="font-size:12px">As formas cadastradas aqui aparecem automaticamente na Nova Venda. Excluir uma opção não altera vendas antigas.</div>
+          </div>
+          <div id="paymentMethodList"></div>
+
+          <div class="card" style="margin-top:18px">
+            <h2 class="section-title">Onde o pagamento caiu</h2>
+            <div class="seller-add">
+              <input id="newPaymentDestinationName" class="input" placeholder="Ex.: Infinity, Conta Vini, Conta Dither..." onkeydown="if(event.key==='Enter'){event.preventDefault();addPaymentDestination()}">
+              <button class="primary-btn" type="button" onclick="addPaymentDestination()">＋ Adicionar</button>
+            </div>
+            <div class="muted" style="font-size:12px">Essas opções aparecem em cada pagamento da Nova Venda e ficam salvas no Firebase.</div>
+          </div>
+          <div id="paymentDestinationList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div id="accessoryModal" class="modal-backdrop" onclick="if(event.target===this) closeAccessoryModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="accessoryModalTitle">Novo acessório</h3>
+      <button class="icon-btn" onclick="closeAccessoryModal()">✕</button>
+    </div>
+    <input id="accName" class="input" placeholder="Nome do acessório">
+    <div class="grid-2" style="margin-top:10px">
+      <input id="accPrice" class="input" inputmode="decimal" placeholder="Preço: 0,00">
+      <input id="accCategory" class="input" placeholder="Categoria">
+    </div>
+    <div class="modal-actions">
+      <button class="secondary-btn" onclick="closeAccessoryModal()">Cancelar</button>
+      <button id="saveAccessoryButton" class="primary-btn" onclick="saveAccessory()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="viewModal" class="modal-backdrop" onclick="if(event.target===this) closeViewModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Detalhes da venda</h3>
+      <button class="icon-btn" onclick="closeViewModal()">✕</button>
+    </div>
+    <div id="viewSaleBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot,
+    getDocs, writeBatch, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2dJAznBnl5vya15tqB7Xozb35xYMEnsU",
+    authDomain: "loja-165c1.firebaseapp.com",
+    projectId: "loja-165c1",
+    storageBucket: "loja-165c1.firebasestorage.app",
+    messagingSenderId: "292042890163",
+    appId: "1:292042890163:web:b7f4e3d7983f2b0b5449c6"
+  };
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const db = getFirestore(firebaseApp);
+  const auth = getAuth(firebaseApp);
+
+  const defaultAccessories = [
+    {id:"brinde-dia-dos-namorados",name:"Brinde Dia Dos Namorados",price:0,category:"Brindes"},
+    {id:"cabo-iphone",name:"Cabo iPhone",price:0,category:"Carregamento"},
+    {id:"capa-especial",name:"Capa Especial",price:0,category:""},
+    {id:"capa-normal",name:"Capa Normal",price:0,category:"Proteção"},
+    {id:"fonte-apple",name:"Fonte Apple",price:0,category:""},
+    {id:"fonte-gold",name:"Fonte Gold",price:0,category:"Carregamento"},
+    {id:"fonte-xiaomi",name:"Fonte Xiaomi",price:0,category:"Carregamento"},
+    {id:"pelicula",name:"Película",price:0,category:"Proteção"}
+  ];
+
+  const defaultSellers = [
+    {id:"dither",name:"Dither"},
+    {id:"vinicius",name:"Vinícius"},
+    {id:"vanderson",name:"Vanderson"},
+    {id:"giovani",name:"Giovani"},
+    {id:"outro",name:"Outro"}
+  ];
+
+  const defaultPaymentMethods = [
+    {id:"pix",name:"Pix"},
+    {id:"dinheiro",name:"Dinheiro"},
+    {id:"cartao-debito",name:"Cartão débito"},
+    {id:"cartao-credito",name:"Cartão crédito"},
+    {id:"transferencia",name:"Transferência"},
+    {id:"outro",name:"Outro"}
+  ];
+
+  const defaultPaymentDestinations = [
+    {id:"infinity",name:"Infinity"},
+    {id:"conta-vini",name:"Conta Vini"},
+    {id:"conta-dither",name:"Conta Dither"}
+  ];
+
+  let sales = [];
+  let accessories = [];
+  let sellers = [];
+  let paymentMethods = [];
+  let paymentDestinations = [];
+  let editingSaleId = null;
+  let editingAccessorySaleId = null;
+  let editingAccessoryId = null;
+  let selectedAccessories = [];
+  let paymentRows = [];
+  let paidOnly = false;
+  let stopSalesListener = null;
+  let stopAccessoriesListener = null;
+  let stopSellersListener = null;
+  let stopPaymentMethodsListener = null;
+  let stopPaymentDestinationsListener = null;
+  let currentUser = null;
+
+  const $ = id => document.getElementById(id);
+
+  function uid(){
+    return (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now().toString(36));
+  }
+  function money(v){
+    return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v)||0);
+  }
+  function num(v){
+    if(typeof v === "number") return Number.isFinite(v) ? v : 0;
+    v = String(v ?? "").trim().replace(/\s/g,"");
+    if(v.includes(",") && v.includes(".")) v = v.replace(/\./g,"").replace(",",".");
+    else if(v.includes(",")) v = v.replace(",",".");
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+  function formatDate(iso){
+    if(!iso) return "";
+    const p = String(iso).split("-");
+    return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
+  }
+  function todayISO(){
+    const d = new Date();
+    const off = d.getTimezoneOffset();
+    return new Date(d.getTime()-off*60000).toISOString().slice(0,10);
+  }
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  }
+  function toast(msg){
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(()=>el.classList.remove("show"),2400);
+  }
+  function setSync(state, text){
+    const badge = $("syncBadge");
+    badge.classList.remove("ok","err");
+    if(state) badge.classList.add(state);
+    $("syncText").textContent = text;
+  }
+  function firebaseErrorMessage(error){
+    const code = error?.code || "";
+    const map = {
+      "auth/invalid-credential":"E-mail ou senha incorretos.",
+      "auth/user-not-found":"Usuário não encontrado.",
+      "auth/wrong-password":"Senha incorreta.",
+      "auth/too-many-requests":"Muitas tentativas. Aguarde um pouco.",
+      "auth/network-request-failed":"Falha de rede. Verifique sua conexão.",
+      "permission-denied":"Sem permissão no Firestore. Confira as regras de segurança."
+    };
+    return map[code] || map[String(code).replace("firestore/","")] || error?.message || "Ocorreu um erro.";
+  }
+
+  async function seedAccessoriesIfNeeded(){
+    const snap = await getDocs(collection(db,"acessorios"));
+    if(!snap.empty) return;
+    const batch = writeBatch(db);
+    defaultAccessories.forEach(a=>{
+      batch.set(doc(db,"acessorios",a.id),{
+        name:a.name,price:a.price,category:a.category,
+        createdAt:serverTimestamp(),createdBy:currentUser?.uid || null
+      });
+    });
+    await batch.commit();
+  }
+
+  async function seedSellersIfNeeded(){
+    const snap = await getDocs(collection(db,"vendedores"));
+    if(!snap.empty) return;
+    const batch = writeBatch(db);
+    defaultSellers.forEach(s=>{
+      batch.set(doc(db,"vendedores",s.id),{
+        name:s.name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+    });
+    await batch.commit();
+  }
+
+  async function seedPaymentMethodsIfNeeded(){
+    const snap = await getDocs(collection(db,"formas_pagamento"));
+    if(!snap.empty) return;
+    const batch = writeBatch(db);
+    defaultPaymentMethods.forEach(m=>{
+      batch.set(doc(db,"formas_pagamento",m.id),{
+        name:m.name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+    });
+    await batch.commit();
+  }
+
+  async function seedPaymentDestinationsIfNeeded(){
+    const snap = await getDocs(collection(db,"destinos_pagamento"));
+    if(!snap.empty) return;
+    const batch = writeBatch(db);
+    defaultPaymentDestinations.forEach(d=>{
+      batch.set(doc(db,"destinos_pagamento",d.id),{
+        name:d.name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+    });
+    await batch.commit();
+  }
+
+  function startRealtime(){
+    if(stopSalesListener) stopSalesListener();
+    if(stopAccessoriesListener) stopAccessoriesListener();
+    if(stopSellersListener) stopSellersListener();
+    if(stopPaymentMethodsListener) stopPaymentMethodsListener();
+    if(stopPaymentDestinationsListener) stopPaymentDestinationsListener();
+
+    setSync("", "Sincronizando");
+
+    stopSalesListener = onSnapshot(
+      collection(db,"vendas"),
+      snap=>{
+        sales = snap.docs.map(d=>({id:d.id,...d.data()}));
+        renderSales();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
+
+    stopAccessoriesListener = onSnapshot(
+      collection(db,"acessorios"),
+      snap=>{
+        accessories = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+        renderAccessories();
+        renderQuickAccessories();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
+
+    stopSellersListener = onSnapshot(
+      collection(db,"vendedores"),
+      snap=>{
+        sellers = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+        renderSellerOptions();
+        renderAccessorySaleSellerOptions();
+        renderSellers();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
+
+    stopPaymentMethodsListener = onSnapshot(
+      collection(db,"formas_pagamento"),
+      snap=>{
+        paymentMethods = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+        renderPaymentMethods();
+        renderPayments();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
+
+    stopPaymentDestinationsListener = onSnapshot(
+      collection(db,"destinos_pagamento"),
+      snap=>{
+        paymentDestinations = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+        renderPaymentDestinations();
+        renderPayments();
+        renderAccessorySaleDestinations();
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
+  }
+
+  $("loginForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const email = $("loginEmail").value.trim();
+    const password = $("loginPassword").value;
+    const btn = $("loginButton");
+    const errorBox = $("loginError");
+
+    errorBox.classList.remove("show");
+    btn.disabled = true;
+    btn.textContent = "Entrando...";
+
+    try{
+      await signInWithEmailAndPassword(auth,email,password);
+    }catch(error){
+      errorBox.textContent = firebaseErrorMessage(error);
+      errorBox.classList.add("show");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "Entrar";
+    }
+  });
+
+  $("logoutButton").addEventListener("click", async ()=>{
+    try{ await signOut(auth); }
+    catch(e){ toast(firebaseErrorMessage(e)); }
+  });
+
+  onAuthStateChanged(auth, async user=>{
+    $("loadingScreen").hidden = true;
+
+    if(!user){
+      currentUser = null;
+      $("app").hidden = true;
+      $("loginScreen").hidden = false;
+      if(stopSalesListener){ stopSalesListener(); stopSalesListener=null; }
+      if(stopAccessoriesListener){ stopAccessoriesListener(); stopAccessoriesListener=null; }
+      if(stopSellersListener){ stopSellersListener(); stopSellersListener=null; }
+      if(stopPaymentMethodsListener){ stopPaymentMethodsListener(); stopPaymentMethodsListener=null; }
+      if(stopPaymentDestinationsListener){ stopPaymentDestinationsListener(); stopPaymentDestinationsListener=null; }
+      return;
+    }
+
+    currentUser = user;
+    $("userEmail").textContent = user.email || "Usuário autenticado";
+    $("loginScreen").hidden = true;
+    $("app").hidden = false;
+
+    try{
+      await seedAccessoriesIfNeeded();
+      await seedSellersIfNeeded();
+      await seedPaymentMethodsIfNeeded();
+      await seedPaymentDestinationsIfNeeded();
+      startRealtime();
+    }catch(error){
+      console.error(error);
+      setSync("err","Erro");
+      toast(firebaseErrorMessage(error));
+    }
+  });
+
+  function navigate(view){
+    document.querySelectorAll(".view").forEach(v=>v.hidden=true);
+    $("view-"+view).hidden=false;
+    document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+    if(view==="sales") renderSales();
+    if(view==="accessories") renderAccessories();
+    if(view==="sellers") renderSellers();
+    if(view==="payment-methods"){ renderPaymentMethods(); renderPaymentDestinations(); }
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  function togglePaidFilter(){
+    paidOnly=!paidOnly;
+    toast(paidOnly ? "Filtro: apenas vendas pagas" : "Filtro removido");
+    renderSales();
+  }
+
+  function saleStatus(s){
+    if(s.saleType==="accessory") return "Pago";
+    if(s.cancelled) return "Cancelado";
+    const final = num(s.finalValue);
+    const received = (s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
+    return final>0 && received+0.009>=final ? "Pago" : "Pendente";
+  }
+
+  function getSaleSequenceMap(){
+    const chronological = sales.slice().sort((a,b)=>{
+      const av = Number(a.createdAtMs)||0;
+      const bv = Number(b.createdAtMs)||0;
+      if(av !== bv) return av - bv;
+      return String(a.id||"").localeCompare(String(b.id||""));
+    });
+
+    const map = new Map();
+    chronological.forEach((sale,index)=>{
+      const saved = Number(sale.launchNumber);
+      map.set(sale.id, saved > 0 ? saved : index + 1);
+    });
+    return map;
+  }
+
+  function getNextSaleSequence(){
+    const values = Array.from(getSaleSequenceMap().values());
+    return (values.length ? Math.max(...values) : 0) + 1;
+  }
+
+  function renderSales(){
+    const q = ($("saleSearch")?.value||"").toLowerCase().trim();
+    const sequenceMap = getSaleSequenceMap();
+    let list = sales.slice().sort((a,b)=>(b.createdAtMs||0)-(a.createdAtMs||0));
+    if(q) list=list.filter(s=>(`${s.client||""} ${s.device||""} ${s.itemName||""} ${s.seller||""} ${s.accessoryDestination||""}`).toLowerCase().includes(q));
+    if(paidOnly) list=list.filter(s=>saleStatus(s)==="Pago");
+
+    const wrap=$("salesList");
+    if(!wrap) return;
+
+    if(!list.length){
+      wrap.innerHTML=`<div class="card empty">
+        <div style="font-size:34px;margin-bottom:8px">▣</div>
+        <strong>Nenhuma venda encontrada</strong>
+        <div style="margin-top:5px">Clique em “Nova Venda” para começar.</div>
+      </div>`;
+      return;
+    }
+
+    wrap.innerHTML=list.map(s=>{
+      const status=saleStatus(s);
+      const pill=status==="Pago"?"status-paid":status==="Cancelado"?"status-cancelled":"status-pending";
+
+      if(s.saleType==="accessory"){
+        const itemName=s.itemName || s.device || "Acessório";
+        const destination=s.accessoryDestination || (s.payments||[])[0]?.destination || "—";
+        return `
+        <div class="sale-card">
+          <div class="sale-top">
+            <div>
+              <div class="sale-title"><span style="color:var(--primary);margin-right:7px">#${sequenceMap.get(s.id) || "-"}</span>◇ &nbsp;${escapeHtml(itemName)}</div>
+              <div class="sale-sub">${escapeHtml(s.seller || "Sem vendedor")}<br>${formatDate(s.date)} &nbsp;•&nbsp; Onde caiu: ${escapeHtml(destination)}</div>
+            </div>
+            <div>
+              <div class="sale-price">${money(s.finalValue)}</div>
+              <div class="status-pill status-paid">Pago</div>
+            </div>
+          </div>
+          <div class="sale-bottom">
+            <div class="checks">
+              <button
+                type="button"
+                class="chip ${s.groupPost ? "selected" : ""}"
+                style="padding:5px 9px"
+                onclick="toggleSaleCheck('${s.id}','groupPost')"
+                title="Marcar/desmarcar GrupoVenda"
+              >
+                <span class="check ${s.groupPost ? "ok" : "no"}">GrupoVenda</span>
+              </button>
+            </div>
+            <div class="actions">
+              <span class="pay-label">${escapeHtml(destination)}</span>
+              <button class="icon-btn whatsapp" title="Enviar pelo WhatsApp" onclick="sendWhatsApp('${s.id}')">◉</button>
+              <button class="icon-btn" title="Visualizar" onclick="viewSale('${s.id}')">◉</button>
+              <button class="icon-btn" title="Editar" onclick="editAccessorySale('${s.id}')">✎</button>
+              <button class="icon-btn delete" title="Excluir" onclick="deleteSale('${s.id}')">♲</button>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      const firstPayment=(s.payments||[])[0];
+      const p=firstPayment ? `${firstPayment.method || ""}${firstPayment.destination ? " • "+firstPayment.destination : ""}` : "—";
+      return `
+      <div class="sale-card">
+        <div class="sale-top">
+          <div>
+            <div class="sale-title"><span style="color:var(--primary);margin-right:7px">#${sequenceMap.get(s.id) || "-"}</span>▯ &nbsp;${escapeHtml(s.device)}</div>
+            <div class="sale-sub">${escapeHtml(s.client)}<br>${formatDate(s.date)} &nbsp;•&nbsp; ${escapeHtml(s.seller||"")}</div>
+          </div>
+          <div>
+            <div class="sale-price">${money(s.finalValue)}</div>
+            <div class="status-pill ${pill}">${status}</div>
+          </div>
+        </div>
+        <div class="sale-bottom">
+          <div class="checks">
+            <button class="check-inline ${s.delivery?"ok":"no"}" type="button" title="Alterar Postado saindo para entrega" onclick="toggleSaleCheck('${s.id}','delivery')">Entrega</button>
+            <button class="check-inline ${s.soldPost?"ok":"no"}" type="button" title="Alterar Postado/marcado vendido" onclick="toggleSaleCheck('${s.id}','soldPost')">Postado/Marcado</button>
+            <button class="check-inline ${s.groupPost?"ok":"no"}" type="button" title="Alterar Postado no GrupoVenda" onclick="toggleSaleCheck('${s.id}','groupPost')">GrupoVenda</button>
+          </div>
+          <div class="actions">
+            <span class="pay-label">${escapeHtml(p)}</span>
+            <button class="icon-btn whatsapp" title="Enviar pelo WhatsApp" onclick="sendWhatsApp('${s.id}')">◉</button>
+            <button class="icon-btn" title="Visualizar" onclick="viewSale('${s.id}')">◉</button>
+            <button class="icon-btn" title="Editar" onclick="editSale('${s.id}')">✎</button>
+            <button class="icon-btn delete" title="Excluir" onclick="deleteSale('${s.id}')">♲</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderAccessorySaleSellerOptions(preferredValue){
+    const select=$("accessorySaleSeller");
+    if(!select) return;
+
+    const current=preferredValue !== undefined ? preferredValue : select.value;
+    let list=sellers.slice();
+
+    if(current && !list.some(s=>String(s.name||"").toLowerCase()===String(current).toLowerCase())){
+      list.push({id:"legacy-accessory",name:current});
+    }
+
+    select.innerHTML='<option value="">Vendedor *</option>' +
+      list.map(s=>`<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("");
+
+    if(current) select.value=current;
+  }
+
+  function renderAccessorySaleDestinations(preferredValue){
+    const select=$("accessorySaleDestination");
+    if(!select) return;
+
+    const current=preferredValue !== undefined ? preferredValue : select.value;
+    let destinations=paymentDestinations.map(d=>d.name);
+
+    if(current && !destinations.some(d=>d.toLowerCase()===String(current).toLowerCase())){
+      destinations.push(current);
+    }
+
+    select.innerHTML='<option value="">Selecione onde caiu...</option>' +
+      destinations.map(d=>`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
+
+    if(current) select.value=current;
+  }
+
+  function openAccessorySale(){
+    editingAccessorySaleId=null;
+    $("accessorySaleForm").reset();
+    $("accessorySaleGroupPost").checked=false;
+    $("accessorySaleNotes").value="";
+    $("accessorySaleTitle").textContent="Venda de Acessório";
+    $("saveAccessorySaleLabel").textContent="Cadastrar Venda de Acessório";
+    renderAccessorySaleSellerOptions();
+    renderAccessorySaleDestinations();
+    navigate("accessory-sale");
+  }
+
+  function editAccessorySale(id){
+    const s=sales.find(x=>x.id===id);
+    if(!s || s.saleType!=="accessory") return;
+
+    editingAccessorySaleId=id;
+    renderAccessorySaleSellerOptions(s.seller || "");
+    $("accessorySaleSeller").value=s.seller || "";
+    $("accessorySaleItem").value=s.itemName || s.device || "";
+    $("accessorySaleValue").value=num(s.finalValue) ? num(s.finalValue).toFixed(2).replace(".",",") : "";
+    $("accessorySaleNotes").value=s.notes || "";
+    $("accessorySaleGroupPost").checked=!!s.groupPost;
+    renderAccessorySaleDestinations(s.accessoryDestination || (s.payments||[])[0]?.destination || "");
+    $("accessorySaleTitle").textContent="Editar Venda de Acessório";
+    $("saveAccessorySaleLabel").textContent="Salvar Alterações";
+    navigate("accessory-sale");
+  }
+
+  $("accessorySaleForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    if(!currentUser){ toast("Faça login novamente."); return; }
+
+    const seller=$("accessorySaleSeller").value;
+    const itemName=$("accessorySaleItem").value.trim();
+    const value=num($("accessorySaleValue").value);
+    const destination=$("accessorySaleDestination").value;
+    const notes=$("accessorySaleNotes").value.trim();
+
+    if(!seller){ toast("Selecione o vendedor."); return; }
+    if(!itemName){ toast("Informe o nome do item."); return; }
+    if(value<=0){ toast("Informe um valor maior que zero."); return; }
+    if(!destination){ toast("Selecione onde o valor caiu."); return; }
+
+    const btn=$("saveAccessorySaleButton");
+    btn.disabled=true;
+    const oldLabel=$("saveAccessorySaleLabel").textContent;
+    $("saveAccessorySaleLabel").textContent="Salvando...";
+
+    const id=editingAccessorySaleId || uid();
+    const old=sales.find(x=>x.id===editingAccessorySaleId);
+
+    const item={
+      saleType:"accessory",
+      itemName,
+      device:itemName,
+      client:"",
+      phone:"",
+      seller,
+      date:old?.date || todayISO(),
+      imei:"",
+      finalValue:value,
+      accessoryDestination:destination,
+      accessories:[],
+      payments:[{
+        method:"Venda de acessório",
+        destination,
+        amount:value
+      }],
+      delivery:false,
+      soldPost:false,
+      groupPost:$("accessorySaleGroupPost").checked,
+      cancelled:false,
+      notes,
+      launchNumber:old?.launchNumber || getNextSaleSequence(),
+      createdAt:old?.createdAt || serverTimestamp(),
+      createdAtMs:old?.createdAtMs || Date.now(),
+      updatedAt:serverTimestamp(),
+      updatedAtMs:Date.now(),
+      createdBy:old?.createdBy || currentUser.uid,
+      createdByEmail:old?.createdByEmail || currentUser.email || "",
+      updatedBy:currentUser.uid,
+      updatedByEmail:currentUser.email || ""
+    };
+
+    try{
+      setSync("","Salvando");
+      await setDoc(doc(db,"vendas",id),item,{merge:true});
+      toast(editingAccessorySaleId ? "Venda de acessório atualizada." : "Venda de acessório cadastrada.");
+      editingAccessorySaleId=null;
+      navigate("sales");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+      setSync("err","Erro ao salvar");
+    }finally{
+      btn.disabled=false;
+      $("saveAccessorySaleLabel").textContent=oldLabel;
+    }
+  });
+
+  function openNewSale(){
+    editingSaleId=null;
+    selectedAccessories=[];
+    paymentRows=[];
+    window.selectedAccessories=selectedAccessories;
+    window.paymentRows=paymentRows;
+    $("saleForm").reset();
+    $("date").value=todayISO();
+    $("saleFormTitle").textContent="Nova Venda";
+    $("saveSaleLabel").textContent="Cadastrar Venda";
+    renderSellerOptions();
+    renderQuickAccessories();
+    renderSelectedAccessories();
+    renderPayments();
+    updateSummary();
+    navigate("new");
+  }
+
+  function editSale(id){
+    const s=sales.find(x=>x.id===id); if(!s) return;
+    if(s.saleType==="accessory"){ editAccessorySale(id); return; }
+    editingSaleId=id;
+    $("client").value=s.client||"";
+    $("phone").value=s.phone||"";
+    renderSellerOptions(s.seller||"");
+    $("seller").value=s.seller||"";
+    $("date").value=s.date||todayISO();
+    $("device").value=s.device||"";
+    $("imei").value=s.imei||"";
+    $("finalValue").value=num(s.finalValue) ? num(s.finalValue).toFixed(2).replace(".",",") : "";
+    $("delivery").checked=!!s.delivery;
+    $("soldPost").checked=!!s.soldPost;
+    $("groupPost").checked=!!s.groupPost;
+    $("cancelled").checked=!!s.cancelled;
+    $("notes").value=s.notes||"";
+    selectedAccessories=JSON.parse(JSON.stringify(s.accessories||[]));
+    paymentRows=JSON.parse(JSON.stringify(s.payments||[]));
+    window.selectedAccessories=selectedAccessories;
+    window.paymentRows=paymentRows;
+    $("saleFormTitle").textContent="Editar Venda";
+    $("saveSaleLabel").textContent="Salvar Alterações";
+    renderQuickAccessories();
+    renderSelectedAccessories();
+    renderPayments();
+    updateSummary();
+    navigate("new");
+  }
+
+  $("saleForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    if(!currentUser){ toast("Faça login novamente."); return; }
+
+    const btn=$("saveSaleButton");
+    btn.disabled=true;
+    const oldLabel=$("saveSaleLabel").textContent;
+    $("saveSaleLabel").textContent="Salvando...";
+
+    const id = editingSaleId || uid();
+    const old = sales.find(x=>x.id===editingSaleId);
+
+    const item={
+      client:$("client").value.trim(),
+      phone:$("phone").value.trim(),
+      seller:$("seller").value,
+      date:$("date").value,
+      device:$("device").value.trim(),
+      imei:$("imei").value.trim(),
+      finalValue:num($("finalValue").value),
+      accessories:selectedAccessories.map(a=>({
+        id:a.id||uid(),
+        sourceId:a.sourceId||null,
+        name:String(a.name||""),
+        price:num(a.price)
+      })),
+      payments:collectPayments(),
+      delivery:$("delivery").checked,
+      soldPost:$("soldPost").checked,
+      groupPost:$("groupPost").checked,
+      cancelled:$("cancelled").checked,
+      notes:$("notes").value.trim(),
+      launchNumber:old?.launchNumber || getNextSaleSequence(),
+      createdAt:old?.createdAt || serverTimestamp(),
+      createdAtMs:old?.createdAtMs || Date.now(),
+      updatedAt:serverTimestamp(),
+      updatedAtMs:Date.now(),
+      createdBy:old?.createdBy || currentUser.uid,
+      createdByEmail:old?.createdByEmail || currentUser.email || "",
+      updatedBy:currentUser.uid,
+      updatedByEmail:currentUser.email || ""
+    };
+
+    try{
+      setSync("","Salvando");
+      await setDoc(doc(db,"vendas",id),item,{merge:true});
+      toast(editingSaleId ? "Venda atualizada." : "Venda cadastrada.");
+      navigate("sales");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+      setSync("err","Erro ao salvar");
+    }finally{
+      btn.disabled=false;
+      $("saveSaleLabel").textContent=oldLabel;
+    }
+  });
+
+  async function deleteSale(id){
+    const s=sales.find(x=>x.id===id); if(!s) return;
+    const label=s.saleType==="accessory"
+      ? `a venda do acessório "${s.itemName || s.device || "Acessório"}"`
+      : `a venda de ${s.client}`;
+    if(!confirm(`Excluir ${label}?`)) return;
+    try{
+      setSync("","Excluindo");
+      await deleteDoc(doc(db,"vendas",id));
+      toast("Venda excluída.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  async function toggleSaleCheck(id, field){
+    const allowed = ["delivery","soldPost","groupPost"];
+    if(!allowed.includes(field)) return;
+    const s = sales.find(x=>x.id===id);
+    if(!s) return;
+
+    const next = !Boolean(s[field]);
+    s[field] = next;
+    renderSales();
+
+    try{
+      setSync("","Salvando");
+      await setDoc(doc(db,"vendas",id),{
+        [field]:next,
+        updatedAt:serverTimestamp(),
+        updatedAtMs:Date.now(),
+        updatedBy:currentUser?.uid || null,
+        updatedByEmail:currentUser?.email || ""
+      },{merge:true});
+    }catch(error){
+      s[field] = !next;
+      renderSales();
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+      setSync("err","Erro ao salvar");
+    }
+  }
+
+  function viewSale(id){
+    const s=sales.find(x=>x.id===id); if(!s) return;
+
+    if(s.saleType==="accessory"){
+      const destination=s.accessoryDestination || (s.payments||[])[0]?.destination || "—";
+      $("viewSaleBody").innerHTML=`
+        <div class="summary-line"><span>Ordem</span><strong>#${getSaleSequenceMap().get(s.id) || "-"}</strong></div>
+        <div class="summary-line"><span>Tipo</span><strong>Venda de acessório</strong></div>
+        <div class="summary-line"><span>Vendedor</span><strong>${escapeHtml(s.seller || "—")}</strong></div>
+        <div class="summary-line"><span>Item</span><strong>${escapeHtml(s.itemName || s.device || "Acessório")}</strong></div>
+        <div class="summary-line"><span>Valor</span><strong>${money(s.finalValue)}</strong></div>
+        <div class="summary-line"><span>Onde caiu</span><strong>${escapeHtml(destination)}</strong></div>
+        <div class="summary-line"><span>GrupoVenda</span><strong>${s.groupPost ? "Marcado" : "Não marcado"}</strong></div>
+        <div class="summary-line"><span>Observação</span><strong>${escapeHtml(s.notes || "—")}</strong></div>
+        <div class="summary-line"><span>Data</span><strong>${formatDate(s.date)}</strong></div>`;
+      $("viewModal").classList.add("show");
+      return;
+    }
+
+    const received=(s.payments||[]).reduce((t,p)=>t+num(p.amount),0);
+    const acc=(s.accessories||[]).map(a=>`${escapeHtml(a.name)} (${money(a.price)})`).join("<br>") || "Nenhum";
+    const pays=(s.payments||[]).map(p=>`${escapeHtml(p.method)}${p.destination ? ` • ${escapeHtml(p.destination)}` : ""} — ${money(p.amount)}`).join("<br>") || "Nenhum";
+
+    $("viewSaleBody").innerHTML=`
+      <div class="summary-line"><span>Ordem</span><strong>#${getSaleSequenceMap().get(s.id) || "-"}</strong></div>
+      <div class="summary-line"><span>Cliente</span><strong>${escapeHtml(s.client)}</strong></div>
+      <div class="summary-line"><span>Telefone</span><strong>${escapeHtml(s.phone||"—")}</strong></div>
+      <div class="summary-line"><span>Aparelho</span><strong>${escapeHtml(s.device)}</strong></div>
+      <div class="summary-line"><span>IMEI / Série</span><strong>${escapeHtml(s.imei||"—")}</strong></div>
+      <div class="summary-line"><span>Vendedor</span><strong>${escapeHtml(s.seller||"—")}</strong></div>
+      <div class="summary-line"><span>Data</span><strong>${formatDate(s.date)}</strong></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Acessórios</div>
+      <div style="font-size:13px">${acc}</div>
+      <div style="font-size:12px;color:var(--muted);margin:12px 0 4px">Pagamentos</div>
+      <div style="font-size:13px">${pays}</div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
+      <div class="summary-line"><span>Valor final</span><strong>${money(s.finalValue)}</strong></div>
+      <div class="summary-line"><span>Recebido</span><strong>${money(received)}</strong></div>
+      <div class="summary-line"><span>Status</span><strong>${saleStatus(s)}</strong></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:12px">Observações</div>
+      <div style="font-size:13px;margin-top:4px">${escapeHtml(s.notes||"Sem observações")}</div>`;
+    $("viewModal").classList.add("show");
+  }
+
+  function closeViewModal(){ $("viewModal").classList.remove("show"); }
+
+  function sendWhatsApp(id){
+    const s=sales.find(x=>x.id===id); if(!s) return;
+
+    if(s.saleType==="accessory"){
+      const destination=s.accessoryDestination || (s.payments||[])[0]?.destination || "-";
+      const msg =
+`*Vendedor:* ${s.seller || "-"}
+
+*Item:* ${s.itemName || s.device || "-"}
+
+*Valor:* ${money(s.finalValue)}
+
+*Onde caiu:* ${destination}${s.notes ? `
+
+*Observação:* ${s.notes}` : ""}`;
+
+      const url=`https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(url,"_blank","noopener");
+      return;
+    }
+
+    const acc=(s.accessories||[])
+      .map(a=>`- ${a.name}${num(a.price)>0?" - "+money(a.price):""}`)
+      .join("\n");
+
+    const pays=(s.payments||[])
+      .map(p=>{
+        const ondeCaiu = p.destination ? `\n  Onde caiu: ${p.destination}` : "";
+        return `- ${p.method}: ${money(p.amount)}${ondeCaiu}`;
+      })
+      .join("\n");
+
+    const totalPagamentos=(s.payments||[])
+      .reduce((total,p)=>total+num(p.amount),0);
+
+    const totalGeral=totalPagamentos>0 ? totalPagamentos : num(s.finalValue);
+
+    const msg =
+`*VENDEDOR:* ${s.seller || "-"}:
+
+*Aparelho:* ${s.device}
+
+*ACESSÓRIOS:*
+${acc || "- Nenhum"}
+
+*PAGAMENTO:*
+${pays || "- Não informado"}${s.notes ? `
+
+*Observação:* ${s.notes}` : ""}
+
+*TOTAL:* ${money(totalGeral)}`;
+
+    const url=`https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url,"_blank","noopener");
+  }
+
+  function renderQuickAccessories(){
+    const wrap=$("quickAccessories");
+    if(!wrap) return;
+    wrap.innerHTML=accessories.map(a=>{
+      const selected=selectedAccessories.some(x=>x.sourceId===a.id);
+      return `<button type="button" class="chip ${selected?"selected":""}" onclick="toggleAccessory('${a.id}')">＋ ${escapeHtml(a.name)}</button>`;
+    }).join("");
+  }
+
+  function toggleAccessory(id){
+    const a=accessories.find(x=>x.id===id); if(!a) return;
+    const i=selectedAccessories.findIndex(x=>x.sourceId===id);
+    if(i>=0) selectedAccessories.splice(i,1);
+    else selectedAccessories.push({id:uid(),sourceId:a.id,name:a.name,price:num(a.price)});
+    renderQuickAccessories();
+    renderSelectedAccessories();
+    updateSummary();
+  }
+
+  function addManualAccessory(){
+    const input=$("manualAccessory");
+    const name=input.value.trim();
+    if(!name) return;
+    selectedAccessories.push({id:uid(),sourceId:null,name,price:0});
+    input.value="";
+    renderSelectedAccessories();
+    updateSummary();
+  }
+
+  function renderSelectedAccessories(){
+    const wrap=$("selectedAccessories");
+    if(!selectedAccessories.length){ wrap.innerHTML=""; return; }
+    wrap.innerHTML=selectedAccessories.map((a,i)=>`
+      <div class="payment-line">
+        <input class="input" value="${escapeHtml(a.name)}" onchange="selectedAccessories[${i}].name=this.value">
+        <input class="input" inputmode="decimal" value="${num(a.price).toFixed(2).replace(".",",")}" onchange="selectedAccessories[${i}].price=num(this.value);updateSummary()">
+        <button type="button" class="secondary-btn delete" onclick="removeSelectedAccessory(${i})">✕</button>
+      </div>`).join("");
+  }
+
+  function removeSelectedAccessory(i){
+    selectedAccessories.splice(i,1);
+    renderQuickAccessories();
+    renderSelectedAccessories();
+    updateSummary();
+  }
+
+  function addPayment(){
+    const defaultMethod = paymentMethods[0]?.name || "Pix";
+    const defaultDestination = paymentDestinations[0]?.name || "";
+    paymentRows.push({method:defaultMethod,destination:defaultDestination,amount:0});
+    renderPayments();
+  }
+
+  function renderPayments(){
+    const wrap=$("payments");
+    if(!paymentRows.length){ wrap.innerHTML=""; return; }
+
+    wrap.innerHTML=paymentRows.map((p,i)=>{
+      let methods = paymentMethods.map(m=>m.name);
+      if(p.method && !methods.some(m=>m.toLowerCase()===String(p.method).toLowerCase())) methods.push(p.method);
+      if(!methods.length) methods=["Pix"];
+
+      let destinations = paymentDestinations.map(d=>d.name);
+      if(p.destination && !destinations.some(d=>d.toLowerCase()===String(p.destination).toLowerCase())) destinations.push(p.destination);
+
+      return `
+      <div class="payment-entry">
+        <select class="select pay-method" data-i="${i}" onchange="paymentRows[${i}].method=this.value">
+          ${methods.map(m=>`<option value="${escapeHtml(m)}" ${p.method===m?"selected":""}>${escapeHtml(m)}</option>`).join("")}
+        </select>
+        <select class="select pay-destination" data-i="${i}" onchange="paymentRows[${i}].destination=this.value">
+          <option value="">Onde caiu?</option>
+          ${destinations.map(d=>`<option value="${escapeHtml(d)}" ${p.destination===d?"selected":""}>${escapeHtml(d)}</option>`).join("")}
+        </select>
+        <input class="input pay-amount" data-i="${i}" inputmode="decimal"
+          value="${num(p.amount)?num(p.amount).toFixed(2).replace(".",","):""}" placeholder="0,00"
+          oninput="paymentRows[${i}].amount=num(this.value);updateSummary()">
+        <button type="button" class="secondary-btn delete" onclick="removePayment(${i})">✕</button>
+      </div>`;
+    }).join("");
+  }
+
+  function removePayment(i){
+    paymentRows.splice(i,1);
+    renderPayments();
+    updateSummary();
+  }
+
+  function collectPayments(){
+    return paymentRows.map((p,i)=>({
+      method:document.querySelector(`.pay-method[data-i="${i}"]`)?.value || p.method,
+      destination:document.querySelector(`.pay-destination[data-i="${i}"]`)?.value || p.destination || "",
+      amount:num(document.querySelector(`.pay-amount[data-i="${i}"]`)?.value || p.amount)
+    })).filter(p=>p.amount>0 || p.method);
+  }
+
+  function updateSummary(){
+    const final=num($("finalValue")?.value);
+    const acc=selectedAccessories.reduce((t,a)=>t+num(a.price),0);
+    const received=paymentRows.reduce((t,p)=>t+num(p.amount),0);
+    const pending=Math.max(final-received,0);
+
+    $("sumAccessories").textContent=money(acc);
+    $("sumFinal").textContent=money(final);
+    $("sumReceived").textContent=money(received);
+    $("sumNet").textContent=money(received);
+    $("sumPending").textContent=money(pending);
+    $("sumStatus").textContent=$("cancelled")?.checked ? "Cancelado" : (final>0 && pending<0.01 ? "Pago" : "Pendente");
+  }
+
+  $("cancelled").addEventListener("change",updateSummary);
+
+
+  function renderSellerOptions(preferredValue){
+    const select = $("seller");
+    if(!select) return;
+
+    const current = preferredValue !== undefined ? preferredValue : select.value;
+    let list = sellers.slice();
+    if(current && !list.some(s=>String(s.name||"").toLowerCase()===String(current).toLowerCase())){
+      list.push({id:"legacy",name:current});
+    }
+
+    select.innerHTML = `<option value="">Vendedor *</option>` +
+      list.map(s=>`<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("");
+
+    if(current) select.value=current;
+  }
+
+  function renderSellers(){
+    const wrap = $("sellerList");
+    if(!wrap) return;
+
+    if(!sellers.length){
+      wrap.innerHTML = '<div class="card empty">Nenhum vendedor cadastrado.</div>';
+      return;
+    }
+
+    wrap.innerHTML = sellers.map(s=>`
+      <div class="list-item">
+        <div class="list-item-left">
+          <div class="cube">♙</div>
+          <div>
+            <div class="list-item-title">${escapeHtml(s.name)}</div>
+            <div class="list-item-meta">Disponível na Nova Venda</div>
+          </div>
+        </div>
+        <button class="icon-btn delete" title="Remover vendedor" onclick="deleteSeller('${s.id}')">♲</button>
+      </div>
+    `).join("");
+  }
+
+  async function addSeller(){
+    const input = $("newSellerName");
+    const name = input.value.trim();
+    if(!name){ toast("Informe o nome do vendedor."); return; }
+
+    if(sellers.some(s=>String(s.name||"").trim().toLowerCase()===name.toLowerCase())){
+      toast("Esse vendedor já está cadastrado.");
+      return;
+    }
+
+    try{
+      await setDoc(doc(db,"vendedores",uid()),{
+        name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+      input.value="";
+      toast("Vendedor adicionado.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  async function deleteSeller(id){
+    const seller = sellers.find(s=>s.id===id);
+    if(!seller) return;
+    if(!confirm(`Remover o vendedor "${seller.name}" da lista? As vendas antigas continuarão com o nome dele.`)) return;
+
+    try{
+      await deleteDoc(doc(db,"vendedores",id));
+      toast("Vendedor removido.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  function renderPaymentMethods(){
+    const wrap=$("paymentMethodList");
+    if(!wrap) return;
+
+    if(!paymentMethods.length){
+      wrap.innerHTML='<div class="card empty">Nenhuma forma de pagamento cadastrada.</div>';
+      return;
+    }
+
+    wrap.innerHTML=paymentMethods.map(m=>`
+      <div class="list-item">
+        <div class="list-item-left">
+          <div class="cube">▤</div>
+          <div>
+            <div class="list-item-title">${escapeHtml(m.name)}</div>
+            <div class="list-item-meta">Disponível na Nova Venda</div>
+          </div>
+        </div>
+        <button class="icon-btn delete" title="Remover forma de pagamento" onclick="deletePaymentMethod('${m.id}')">♲</button>
+      </div>
+    `).join("");
+  }
+
+  async function addPaymentMethod(){
+    const input=$("newPaymentMethodName");
+    const name=input.value.trim();
+    if(!name){ toast("Informe a forma de pagamento."); return; }
+
+    if(paymentMethods.some(m=>String(m.name||"").trim().toLowerCase()===name.toLowerCase())){
+      toast("Essa forma de pagamento já está cadastrada.");
+      return;
+    }
+
+    try{
+      await setDoc(doc(db,"formas_pagamento",uid()),{
+        name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+      input.value="";
+      toast("Forma de pagamento adicionada.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  async function deletePaymentMethod(id){
+    const method=paymentMethods.find(m=>m.id===id);
+    if(!method) return;
+    if(!confirm(`Remover "${method.name}" da lista? As vendas antigas continuarão com essa forma de pagamento.`)) return;
+
+    try{
+      await deleteDoc(doc(db,"formas_pagamento",id));
+      toast("Forma de pagamento removida.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  function renderPaymentDestinations(){
+    const wrap=$("paymentDestinationList");
+    if(!wrap) return;
+
+    if(!paymentDestinations.length){
+      wrap.innerHTML='<div class="card empty">Nenhum destino de pagamento cadastrado.</div>';
+      return;
+    }
+
+    wrap.innerHTML=paymentDestinations.map(d=>`
+      <div class="list-item">
+        <div class="list-item-left">
+          <div class="cube">◎</div>
+          <div>
+            <div class="list-item-title">${escapeHtml(d.name)}</div>
+            <div class="list-item-meta">Disponível no campo “Onde caiu?”</div>
+          </div>
+        </div>
+        <button class="icon-btn delete" title="Remover destino" onclick="deletePaymentDestination('${d.id}')">♲</button>
+      </div>
+    `).join("");
+  }
+
+  async function addPaymentDestination(){
+    const input=$("newPaymentDestinationName");
+    const name=input.value.trim();
+    if(!name){ toast("Informe onde o pagamento caiu."); return; }
+
+    if(paymentDestinations.some(d=>String(d.name||"").trim().toLowerCase()===name.toLowerCase())){
+      toast("Essa opção já está cadastrada.");
+      return;
+    }
+
+    try{
+      await setDoc(doc(db,"destinos_pagamento",uid()),{
+        name,
+        createdAt:serverTimestamp(),
+        createdAtMs:Date.now(),
+        createdBy:currentUser?.uid || null
+      });
+      input.value="";
+      toast("Destino de pagamento adicionado.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  async function deletePaymentDestination(id){
+    const destination=paymentDestinations.find(d=>d.id===id);
+    if(!destination) return;
+    if(!confirm(`Remover "${destination.name}" da lista? As vendas antigas continuarão mostrando essa opção.`)) return;
+
+    try{
+      await deleteDoc(doc(db,"destinos_pagamento",id));
+      toast("Destino de pagamento removido.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  function renderAccessories(){
+    const wrap=$("accessoryList");
+    if(!wrap) return;
+
+    if(!accessories.length){
+      wrap.innerHTML='<div class="card empty">Nenhum acessório cadastrado.</div>';
+      return;
+    }
+
+    wrap.innerHTML=accessories.map(a=>`
+      <div class="list-item">
+        <div class="list-item-left">
+          <div class="cube">◇</div>
+          <div>
+            <div class="list-item-title">${escapeHtml(a.name)}</div>
+            <div class="list-item-meta">${money(a.price)} ${a.category?`<span class="mini-tag">${escapeHtml(a.category)}</span>`:""}</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="icon-btn" onclick="openAccessoryModal('${a.id}')">✎</button>
+          <button class="icon-btn delete" onclick="deleteAccessory('${a.id}')">♲</button>
+        </div>
+      </div>`).join("");
+  }
+
+  function openAccessoryModal(id){
+    editingAccessoryId=id||null;
+    const a=accessories.find(x=>x.id===id);
+    $("accessoryModalTitle").textContent=a?"Editar acessório":"Novo acessório";
+    $("accName").value=a?.name||"";
+    $("accPrice").value=a?num(a.price).toFixed(2).replace(".",","):"";
+    $("accCategory").value=a?.category||"";
+    $("accessoryModal").classList.add("show");
+  }
+
+  function closeAccessoryModal(){ $("accessoryModal").classList.remove("show"); }
+
+  async function saveAccessory(){
+    const name=$("accName").value.trim();
+    if(!name){toast("Informe o nome do acessório.");return;}
+
+    const btn=$("saveAccessoryButton");
+    btn.disabled=true;
+    btn.textContent="Salvando...";
+
+    const id=editingAccessoryId||uid();
+    const old=accessories.find(x=>x.id===editingAccessoryId);
+
+    const item={
+      name,
+      price:num($("accPrice").value),
+      category:$("accCategory").value.trim(),
+      createdAt:old?.createdAt || serverTimestamp(),
+      createdAtMs:old?.createdAtMs || Date.now(),
+      updatedAt:serverTimestamp(),
+      updatedAtMs:Date.now(),
+      createdBy:old?.createdBy || currentUser?.uid || null,
+      updatedBy:currentUser?.uid || null
+    };
+
+    try{
+      await setDoc(doc(db,"acessorios",id),item,{merge:true});
+      closeAccessoryModal();
+      toast("Acessório salvo.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }finally{
+      btn.disabled=false;
+      btn.textContent="Salvar";
+    }
+  }
+
+  async function deleteAccessory(id){
+    const a=accessories.find(x=>x.id===id); if(!a) return;
+    if(!confirm(`Excluir "${a.name}"?`)) return;
+
+    try{
+      await deleteDoc(doc(db,"acessorios",id));
+      toast("Acessório excluído.");
+    }catch(error){
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+    }
+  }
+
+  // Expor funções usadas pelos onclicks do HTML.
+  Object.assign(window,{
+    navigate,togglePaidFilter,openNewSale,openAccessorySale,editAccessorySale,editSale,deleteSale,toggleSaleCheck,viewSale,closeViewModal,
+    sendWhatsApp,toggleAccessory,addManualAccessory,removeSelectedAccessory,
+    addPayment,removePayment,updateSummary,openAccessoryModal,closeAccessoryModal,
+    saveAccessory,deleteAccessory,addSeller,deleteSeller,renderSellers,
+    addPaymentMethod,deletePaymentMethod,renderPaymentMethods,
+    addPaymentDestination,deletePaymentDestination,renderPaymentDestinations,
+    renderSales,renderAccessories,renderSellerOptions,
+    num,selectedAccessories,paymentRows
+  });
+
+  $("date").value=todayISO();
+  renderSales();
+  renderAccessories();
+  renderSellers();
+  renderSellerOptions();
+  renderAccessorySaleSellerOptions();
+  renderPaymentMethods();
+  renderPaymentDestinations();
+  renderAccessorySaleDestinations();
+</script>
+</body>
+</html>
