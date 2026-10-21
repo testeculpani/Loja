@@ -434,6 +434,11 @@
                 </select>
               </div>
 
+              <div class="field">
+                <label>Observação</label>
+                <textarea id="accessorySaleNotes" class="textarea" placeholder="Ex.: Fiado — pagar dia 10/11, metade agora e metade no fim do mês..."></textarea>
+              </div>
+
               <div class="switch-row">
                 <span>Postado no GrupoVenda</span>
                 <label class="switch">
@@ -1052,6 +1057,7 @@
     editingAccessorySaleId=null;
     $("accessorySaleForm").reset();
     $("accessorySaleGroupPost").checked=false;
+    $("accessorySaleNotes").value="";
     $("accessorySaleTitle").textContent="Venda de Acessório";
     $("saveAccessorySaleLabel").textContent="Cadastrar Venda de Acessório";
     renderAccessorySaleSellerOptions();
@@ -1068,6 +1074,7 @@
     $("accessorySaleSeller").value=s.seller || "";
     $("accessorySaleItem").value=s.itemName || s.device || "";
     $("accessorySaleValue").value=num(s.finalValue) ? num(s.finalValue).toFixed(2).replace(".",",") : "";
+    $("accessorySaleNotes").value=s.notes || "";
     $("accessorySaleGroupPost").checked=!!s.groupPost;
     renderAccessorySaleDestinations(s.accessoryDestination || (s.payments||[])[0]?.destination || "");
     $("accessorySaleTitle").textContent="Editar Venda de Acessório";
@@ -1083,6 +1090,7 @@
     const itemName=$("accessorySaleItem").value.trim();
     const value=num($("accessorySaleValue").value);
     const destination=$("accessorySaleDestination").value;
+    const notes=$("accessorySaleNotes").value.trim();
 
     if(!seller){ toast("Selecione o vendedor."); return; }
     if(!itemName){ toast("Informe o nome do item."); return; }
@@ -1118,7 +1126,7 @@
       soldPost:false,
       groupPost:$("accessorySaleGroupPost").checked,
       cancelled:false,
-      notes:"",
+      notes,
       launchNumber:old?.launchNumber || getNextSaleSequence(),
       createdAt:old?.createdAt || serverTimestamp(),
       createdAtMs:old?.createdAtMs || Date.now(),
@@ -1309,6 +1317,7 @@
         <div class="summary-line"><span>Valor</span><strong>${money(s.finalValue)}</strong></div>
         <div class="summary-line"><span>Onde caiu</span><strong>${escapeHtml(destination)}</strong></div>
         <div class="summary-line"><span>GrupoVenda</span><strong>${s.groupPost ? "Marcado" : "Não marcado"}</strong></div>
+        <div class="summary-line"><span>Observação</span><strong>${escapeHtml(s.notes || "—")}</strong></div>
         <div class="summary-line"><span>Data</span><strong>${formatDate(s.date)}</strong></div>`;
       $("viewModal").classList.add("show");
       return;
@@ -1354,7 +1363,9 @@
 
 *Valor:* ${money(s.finalValue)}
 
-*Onde caiu:* ${destination}`;
+*Onde caiu:* ${destination}${s.notes ? `
+
+*Observação:* ${s.notes}` : ""}`;
 
       const url=`https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(url,"_blank","noopener");
