@@ -145,6 +145,15 @@
     }
     .chip:hover{border-color:#aebff9;background:#f8faff}
     .chip.selected{background:var(--primary-soft);color:var(--primary);border-color:#b6c4fb}
+    .accessory-group-toggle.selected{
+      background:#e8f8ef;
+      color:#087a46;
+      border-color:#73d6a4;
+    }
+    .accessory-group-toggle.selected:hover{
+      background:#dff5e8;
+      border-color:#56c98c;
+    }
     .row-add{display:grid;grid-template-columns:1fr 38px;gap:8px}
     .list-item{
       border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px;
@@ -976,7 +985,7 @@
             <div class="checks">
               <button
                 type="button"
-                class="chip ${s.groupPost ? "selected" : ""}"
+                class="chip accessory-group-toggle ${s.groupPost ? "selected" : ""}"
                 style="padding:5px 9px"
                 onclick="toggleSaleCheck('${s.id}','groupPost')"
                 title="Marcar/desmarcar GrupoVenda"
