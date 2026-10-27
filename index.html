@@ -208,6 +208,27 @@
     }
     .toast.show{display:block}
 
+    .simulation-input-wrap{
+      display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+      border-radius:14px;padding:14px;box-shadow:var(--shadow);margin-bottom:14px
+    }
+    .simulation-prefix{font-size:18px;font-weight:800;color:var(--muted);flex:0 0 auto}
+    .simulation-value{
+      border:0;outline:0;width:100%;min-width:0;font-size:24px;font-weight:800;
+      color:var(--text);background:transparent
+    }
+    .simulation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .simulation-row{
+      background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px 14px;
+      box-shadow:var(--shadow);display:grid;grid-template-columns:minmax(0,1fr) auto;
+      gap:10px;align-items:center
+    }
+    .simulation-name{font-size:14px;font-weight:800}
+    .simulation-rate{font-size:11px;color:var(--muted);margin-top:3px}
+    .simulation-total{font-size:16px;font-weight:800;text-align:right}
+    .simulation-installment{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
+    .simulation-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px}
+
     .login-screen{
       position:fixed;inset:0;background:linear-gradient(135deg,#f7f9ff,#eef2ff);
       display:grid;place-items:center;padding:20px;z-index:200
@@ -240,13 +261,15 @@
       .sidebar{
         position:fixed;left:0;right:0;bottom:0;top:auto;height:64px;z-index:40;
         border-right:0;border-top:1px solid var(--line);padding:6px;
-        display:grid;grid-template-columns:repeat(5,1fr)
+        display:grid;grid-template-columns:repeat(6,1fr)
       }
       .nav-btn{justify-content:center;padding:8px 4px;margin:0;gap:4px;flex-direction:column;font-size:10px}
       .main{padding:16px 12px 86px}
       .user-email{display:none}
     }
     @media(max-width:580px){
+      .simulation-grid{grid-template-columns:1fr}
+      .simulation-value{font-size:22px}
       .grid-2,.sale-top,.payment-line,.payment-entry{grid-template-columns:1fr}
       .sale-price{text-align:left}
       .sale-bottom{align-items:flex-start;flex-direction:column}
@@ -305,6 +328,7 @@
       <button class="nav-btn" data-view="accessories" onclick="navigate('accessories')"><span>◇</span>Acessórios</button>
       <button class="nav-btn" data-view="sellers" onclick="navigate('sellers')"><span>♙</span>Vendedores</button>
       <button class="nav-btn" data-view="payment-methods" onclick="navigate('payment-methods')"><span>▤</span>Pagamentos</button>
+      <button class="nav-btn" data-view="simulation" onclick="navigate('simulation')"><span>⌗</span>Simulação</button>
     </aside>
 
     <main class="main">
@@ -496,6 +520,29 @@
             <div class="muted" style="font-size:12px">Os vendedores cadastrados aqui aparecem automaticamente na Nova Venda.</div>
           </div>
           <div id="sellerList"></div>
+        </div>
+      </section>
+
+
+      <section id="view-simulation" class="view" hidden>
+        <div class="content">
+          <div class="page-head">
+            <h1>Simulação</h1>
+          </div>
+
+          <div class="card">
+            <h2 class="section-title">Valor que deseja receber</h2>
+            <div class="simulation-input-wrap">
+              <span class="simulation-prefix">R$</span>
+              <input id="simulationBaseValue" class="simulation-value" inputmode="decimal"
+                     autocomplete="off" placeholder="0,00" oninput="renderSimulation()">
+            </div>
+            <div class="simulation-note">
+              Digite o valor líquido desejado. O sistema calcula quanto cobrar para receber esse valor após a taxa.
+            </div>
+          </div>
+
+          <div id="simulationResults" class="simulation-grid"></div>
         </div>
       </section>
 
@@ -905,6 +952,7 @@
     if(view==="accessories") renderAccessories();
     if(view==="sellers") renderSellers();
     if(view==="payment-methods"){ renderPaymentMethods(); renderPaymentDestinations(); }
+    if(view==="simulation") renderSimulation();
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
@@ -1827,6 +1875,67 @@ ${pays || "- Não informado"}${s.notes ? `
   }
 
   // Expor funções usadas pelos onclicks do HTML.
+
+  const simulationRates = [
+    {label:"Débito", installments:1, rate:0.756, type:"debit"},
+    {label:"Crédito 1x", installments:1, rate:2.765},
+    {label:"Crédito 2x", installments:2, rate:4.102},
+    {label:"Crédito 3x", installments:3, rate:4.669},
+    {label:"Crédito 4x", installments:4, rate:5.241},
+    {label:"Crédito 5x", installments:5, rate:5.809},
+    {label:"Crédito 6x", installments:6, rate:6.372},
+    {label:"Crédito 7x", installments:7, rate:6.964},
+    {label:"Crédito 8x", installments:8, rate:7.516},
+    {label:"Crédito 9x", installments:9, rate:8.12},
+    {label:"Crédito 10x", installments:10, rate:8.684},
+    {label:"Crédito 11x", installments:11, rate:9.278},
+    {label:"Crédito 12x", installments:12, rate:9.878}
+  ];
+
+  function calculateGrossForNet(netValue, rate){
+    const net=num(netValue);
+    const pct=Number(rate)||0;
+    if(net<=0 || pct>=100) return 0;
+    return net / (1 - pct/100);
+  }
+
+  function renderSimulation(){
+    const input=$("simulationBaseValue");
+    const wrap=$("simulationResults");
+    if(!input || !wrap) return;
+
+    const base=num(input.value);
+
+    if(base<=0){
+      wrap.innerHTML=`
+        <div class="card empty" style="grid-column:1/-1">
+          Digite um valor para ver Débito e Crédito de 1x a 12x.
+        </div>`;
+      return;
+    }
+
+    wrap.innerHTML=simulationRates.map(item=>{
+      const total=calculateGrossForNet(base,item.rate);
+      const installment=total/item.installments;
+
+      return `
+        <div class="simulation-row">
+          <div>
+            <div class="simulation-name">${escapeHtml(item.label)}</div>
+            <div class="simulation-rate">Taxa ${String(item.rate).replace(".",",")}%</div>
+          </div>
+          <div>
+            <div class="simulation-total">${money(total)}</div>
+            <div class="simulation-installment">${
+              item.installments>1
+                ? `${item.installments}x de ${money(installment)}`
+                : item.type==="debit" ? "Débito" : `1x de ${money(installment)}`
+            }</div>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
   Object.assign(window,{
     navigate,togglePaidFilter,openNewSale,openAccessorySale,editAccessorySale,editSale,deleteSale,toggleSaleCheck,viewSale,closeViewModal,
     sendWhatsApp,toggleAccessory,addManualAccessory,removeSelectedAccessory,
@@ -1834,7 +1943,7 @@ ${pays || "- Não informado"}${s.notes ? `
     saveAccessory,deleteAccessory,addSeller,deleteSeller,renderSellers,
     addPaymentMethod,deletePaymentMethod,renderPaymentMethods,
     addPaymentDestination,deletePaymentDestination,renderPaymentDestinations,
-    renderSales,renderAccessories,renderSellerOptions,
+    renderSales,renderAccessories,renderSellerOptions,renderSimulation,
     num,selectedAccessories,paymentRows
   });
 
@@ -1847,6 +1956,7 @@ ${pays || "- Não informado"}${s.notes ? `
   renderPaymentMethods();
   renderPaymentDestinations();
   renderAccessorySaleDestinations();
+  renderSimulation();
 </script>
 </body>
 </html>
