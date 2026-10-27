@@ -228,6 +228,22 @@
     .simulation-total{font-size:16px;font-weight:800;text-align:right}
     .simulation-installment{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
     .simulation-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px}
+    .cost-paste{
+      min-height:210px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:13px;line-height:1.5
+    }
+    .cost-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .cost-summary{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0}
+    .cost-summary .mini-tag{padding:4px 9px}
+    .cost-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+    .cost-table{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
+    .cost-table th,.cost-table td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}
+    .cost-table th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:#f8fafc}
+    .cost-table td:last-child,.cost-table th:last-child{text-align:right;white-space:nowrap}
+    .cost-table tr:last-child td{border-bottom:0}
+    .cost-error{color:#b42318;font-size:12px;margin-top:8px;line-height:1.5}
+    .stock-empty{padding:50px 18px;text-align:center}
+    .stock-empty .stock-icon{font-size:36px;margin-bottom:10px;color:var(--muted)}
 
     .login-screen{
       position:fixed;inset:0;background:linear-gradient(135deg,#f7f9ff,#eef2ff);
@@ -259,11 +275,12 @@
     @media(max-width:860px){
       .layout{grid-template-columns:1fr}
       .sidebar{
-        position:fixed;left:0;right:0;bottom:0;top:auto;height:64px;z-index:40;
+        position:fixed;left:0;right:0;bottom:0;top:auto;height:68px;z-index:40;
         border-right:0;border-top:1px solid var(--line);padding:6px;
-        display:grid;grid-template-columns:repeat(6,1fr)
+        display:flex;overflow-x:auto;overflow-y:hidden;gap:4px;-webkit-overflow-scrolling:touch
       }
-      .nav-btn{justify-content:center;padding:8px 4px;margin:0;gap:4px;flex-direction:column;font-size:10px}
+      .sidebar::-webkit-scrollbar{display:none}
+      .nav-btn{justify-content:center;padding:8px 8px;margin:0;gap:4px;flex-direction:column;font-size:10px;min-width:82px;flex:0 0 82px}
       .main{padding:16px 12px 86px}
       .user-email{display:none}
     }
@@ -329,6 +346,8 @@
       <button class="nav-btn" data-view="sellers" onclick="navigate('sellers')"><span>♙</span>Vendedores</button>
       <button class="nav-btn" data-view="payment-methods" onclick="navigate('payment-methods')"><span>▤</span>Pagamentos</button>
       <button class="nav-btn" data-view="simulation" onclick="navigate('simulation')"><span>⌗</span>Simulação</button>
+      <button class="nav-btn" data-view="costs" onclick="navigate('costs')"><span>R$</span>Custos</button>
+      <button class="nav-btn" data-view="stock" onclick="navigate('stock')"><span>▦</span>Estoque</button>
     </aside>
 
     <main class="main">
@@ -546,6 +565,48 @@
         </div>
       </section>
 
+
+      <section id="view-costs" class="view" hidden>
+        <div class="content wide">
+          <div class="page-head"><h1>Custos</h1></div>
+
+          <div class="card">
+            <h2 class="section-title">Colar / atualizar lista de custos</h2>
+            <div class="muted" style="font-size:12px;line-height:1.55;margin-bottom:10px">
+              Cole uma linha por item, deixando o valor no final. Exemplos:<br>
+              <strong>iPhone 15 128GB - 3500</strong><br>
+              <strong>iPhone 16 256GB | R$ 4.850,00</strong>
+            </div>
+            <textarea id="costPasteInput" class="textarea cost-paste" placeholder="Cole sua lista aqui..." oninput="handleCostPasteInput()"></textarea>
+            <div id="costParseError" class="cost-error" hidden></div>
+            <div id="costPreviewSummary" class="cost-summary"></div>
+            <div class="cost-actions">
+              <button id="saveCostsButton" type="button" class="primary-btn" onclick="saveCostsFromPaste()">Salvar / Atualizar lista</button>
+              <button type="button" class="secondary-btn" onclick="loadSavedCostsIntoEditor()">Recarregar lista salva</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="section-title">Lista salva</h2>
+            <input id="costSearch" class="input" placeholder="Buscar item..." oninput="renderCosts()" style="margin-bottom:10px">
+            <div id="costList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-stock" class="view" hidden>
+        <div class="content">
+          <div class="page-head"><h1>Estoque</h1></div>
+          <div class="card stock-empty">
+            <div class="stock-icon">▦</div>
+            <strong>Módulo de estoque preparado</strong>
+            <div class="muted" style="font-size:12px;margin-top:7px;line-height:1.5">
+              Por enquanto está vazio. Depois podemos adicionar entrada, saída, saldo e histórico de movimentações.
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="view-payment-methods" class="view" hidden>
         <div class="content">
           <div class="page-head">
@@ -668,6 +729,8 @@
   let sellers = [];
   let paymentMethods = [];
   let paymentDestinations = [];
+  let costs = [];
+  let costEditorDirty = false;
   let editingSaleId = null;
   let editingAccessorySaleId = null;
   let editingAccessoryId = null;
@@ -679,6 +742,7 @@
   let stopSellersListener = null;
   let stopPaymentMethodsListener = null;
   let stopPaymentDestinationsListener = null;
+  let stopCostsListener = null;
   let currentUser = null;
 
   const $ = id => document.getElementById(id);
@@ -800,6 +864,7 @@
     if(stopSellersListener) stopSellersListener();
     if(stopPaymentMethodsListener) stopPaymentMethodsListener();
     if(stopPaymentDestinationsListener) stopPaymentDestinationsListener();
+    if(stopCostsListener) stopCostsListener();
 
     setSync("", "Sincronizando");
 
@@ -882,6 +947,22 @@
         toast(firebaseErrorMessage(err));
       }
     );
+
+    stopCostsListener = onSnapshot(
+      collection(db,"custos"),
+      snap=>{
+        costs = snap.docs.map(d=>({id:d.id,...d.data()}))
+          .sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+        renderCosts();
+        if(!costEditorDirty) loadSavedCostsIntoEditor(false);
+        setSync("ok","Sincronizado");
+      },
+      err=>{
+        console.error(err);
+        setSync("err","Erro de sincronização");
+        toast(firebaseErrorMessage(err));
+      }
+    );
   }
 
   $("loginForm").addEventListener("submit", async e=>{
@@ -923,6 +1004,7 @@
       if(stopSellersListener){ stopSellersListener(); stopSellersListener=null; }
       if(stopPaymentMethodsListener){ stopPaymentMethodsListener(); stopPaymentMethodsListener=null; }
       if(stopPaymentDestinationsListener){ stopPaymentDestinationsListener(); stopPaymentDestinationsListener=null; }
+      if(stopCostsListener){ stopCostsListener(); stopCostsListener=null; }
       return;
     }
 
@@ -953,6 +1035,7 @@
     if(view==="sellers") renderSellers();
     if(view==="payment-methods"){ renderPaymentMethods(); renderPaymentDestinations(); }
     if(view==="simulation") renderSimulation();
+    if(view==="costs"){ renderCosts(); renderCostPastePreview(); }
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
@@ -1876,6 +1959,162 @@ ${pays || "- Não informado"}${s.notes ? `
 
   // Expor funções usadas pelos onclicks do HTML.
 
+
+  function parseCostPaste(rawText){
+    const lines=String(rawText||"").split(/\r?\n/);
+    const items=[];
+    const invalid=[];
+
+    lines.forEach((original,index)=>{
+      const line=original.trim();
+      if(!line) return;
+
+      let description="";
+      let valueText="";
+
+      // Prefer explicit separators between description and value.
+      const sepMatch=line.match(/^(.*?)(?:\s+(?:-|–|—|\||;)\s*)((?:R\$\s*)?[\d.]+(?:,\d{1,2})?|(?:R\$\s*)?\d+(?:\.\d{1,2})?)\s*$/i);
+      if(sepMatch){
+        description=sepMatch[1].trim();
+        valueText=sepMatch[2].trim();
+      }else{
+        // Also accepts simple paste such as: IPHONE 15 128GB 3500
+        const tailMatch=line.match(/^(.*?)\s+((?:R\$\s*)?[\d.]+(?:,\d{1,2})?|(?:R\$\s*)?\d+(?:\.\d{1,2})?)\s*$/i);
+        if(tailMatch){
+          description=tailMatch[1].trim();
+          valueText=tailMatch[2].trim();
+        }
+      }
+
+      const value=num(valueText.replace(/^R\$\s*/i,""));
+      if(!description || !valueText || value<0){
+        invalid.push({line:index+1,text:line});
+        return;
+      }
+      items.push({description,cost:value,order:items.length+1});
+    });
+
+    return {items,invalid};
+  }
+
+  function handleCostPasteInput(){
+    costEditorDirty=true;
+    renderCostPastePreview();
+  }
+
+  function renderCostPastePreview(){
+    const input=$("costPasteInput");
+    const summary=$("costPreviewSummary");
+    const error=$("costParseError");
+    if(!input || !summary || !error) return;
+
+    const parsed=parseCostPaste(input.value);
+    const total=parsed.items.reduce((sum,item)=>sum+num(item.cost),0);
+
+    summary.innerHTML=`
+      <span class="mini-tag">${parsed.items.length} item(ns) reconhecido(s)</span>
+      ${parsed.items.length ? `<span class="mini-tag">Soma informativa: ${money(total)}</span>` : ""}`;
+
+    if(parsed.invalid.length){
+      const sample=parsed.invalid.slice(0,4).map(x=>`Linha ${x.line}: ${escapeHtml(x.text)}`).join("<br>");
+      error.hidden=false;
+      error.innerHTML=`Não consegui reconhecer ${parsed.invalid.length} linha(s). Deixe o valor no final.<br>${sample}`;
+    }else{
+      error.hidden=true;
+      error.innerHTML="";
+    }
+  }
+
+  function loadSavedCostsIntoEditor(showToast=true){
+    const input=$("costPasteInput");
+    if(!input) return;
+    input.value=costs.map(item=>`${item.description} - ${money(item.cost)}`).join("\n");
+    costEditorDirty=false;
+    renderCostPastePreview();
+    if(showToast) toast("Lista salva carregada.");
+  }
+
+  function renderCosts(){
+    const wrap=$("costList");
+    if(!wrap) return;
+    const q=($("costSearch")?.value||"").trim().toLowerCase();
+    const list=costs.filter(item=>String(item.description||"").toLowerCase().includes(q));
+
+    if(!list.length){
+      wrap.innerHTML=`<div class="empty">${costs.length ? "Nenhum item encontrado." : "Nenhum custo salvo ainda."}</div>`;
+      return;
+    }
+
+    wrap.innerHTML=`<div class="cost-table-wrap"><table class="cost-table">
+      <thead><tr><th>Item</th><th>Custo</th></tr></thead>
+      <tbody>${list.map(item=>`<tr><td>${escapeHtml(item.description||"")}</td><td><strong>${money(item.cost)}</strong></td></tr>`).join("")}</tbody>
+    </table></div>`;
+  }
+
+  async function saveCostsFromPaste(){
+    if(!currentUser){ toast("Faça login novamente."); return; }
+    const input=$("costPasteInput");
+    const parsed=parseCostPaste(input?.value||"");
+
+    if(!parsed.items.length){
+      toast("Cole pelo menos um item com valor.");
+      renderCostPastePreview();
+      return;
+    }
+    if(parsed.invalid.length){
+      const ok=confirm(`${parsed.invalid.length} linha(s) não foram reconhecidas e serão ignoradas. Salvar mesmo assim?`);
+      if(!ok) return;
+    }
+
+    const btn=$("saveCostsButton");
+    btn.disabled=true;
+    const oldText=btn.textContent;
+    btn.textContent="Salvando...";
+
+    try{
+      setSync("","Salvando custos");
+      const existing=await getDocs(collection(db,"custos"));
+      const operations=[];
+      existing.docs.forEach(d=>operations.push({type:"delete",ref:d.ref}));
+      parsed.items.forEach((item,index)=>{
+        const ref=doc(collection(db,"custos"));
+        operations.push({
+          type:"set",
+          ref,
+          data:{
+            description:item.description,
+            cost:num(item.cost),
+            order:index+1,
+            updatedAt:serverTimestamp(),
+            updatedAtMs:Date.now(),
+            updatedBy:currentUser.uid
+          }
+        });
+      });
+
+      // Firestore batch limit is 500 operations. Use smaller chunks for safety.
+      for(let i=0;i<operations.length;i+=400){
+        const batch=writeBatch(db);
+        operations.slice(i,i+400).forEach(op=>{
+          if(op.type==="delete") batch.delete(op.ref);
+          else batch.set(op.ref,op.data);
+        });
+        await batch.commit();
+      }
+
+      costEditorDirty=false;
+      toast(`${parsed.items.length} custo(s) salvo(s).`);
+      setSync("ok","Sincronizado");
+    }catch(error){
+      console.error(error);
+      setSync("err","Erro ao salvar custos");
+      toast(firebaseErrorMessage(error));
+    }finally{
+      btn.disabled=false;
+      btn.textContent=oldText;
+    }
+  }
+
   const simulationRates = [
     {label:"Débito", installments:1, rate:0.756, type:"debit"},
     {label:"Crédito 1x", installments:1, rate:2.765},
@@ -1944,6 +2183,7 @@ ${pays || "- Não informado"}${s.notes ? `
     addPaymentMethod,deletePaymentMethod,renderPaymentMethods,
     addPaymentDestination,deletePaymentDestination,renderPaymentDestinations,
     renderSales,renderAccessories,renderSellerOptions,renderSimulation,
+    handleCostPasteInput,renderCostPastePreview,loadSavedCostsIntoEditor,renderCosts,saveCostsFromPaste,
     num,selectedAccessories,paymentRows
   });
 
