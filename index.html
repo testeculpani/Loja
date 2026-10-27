@@ -538,7 +538,7 @@
                      autocomplete="off" placeholder="0,00" oninput="renderSimulation()">
             </div>
             <div class="simulation-note">
-              Digite o valor líquido desejado. O sistema calcula quanto cobrar para receber esse valor após a taxa.
+              Digite o valor base. O sistema aplica o acréscimo correspondente à taxa de cada modalidade.
             </div>
           </div>
 
@@ -1893,10 +1893,10 @@ ${pays || "- Não informado"}${s.notes ? `
   ];
 
   function calculateGrossForNet(netValue, rate){
-    const net=num(netValue);
+    const base=num(netValue);
     const pct=Number(rate)||0;
-    if(net<=0 || pct>=100) return 0;
-    return net / (1 - pct/100);
+    if(base<=0) return 0;
+    return base * (1 + pct/100);
   }
 
   function renderSimulation(){
